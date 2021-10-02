@@ -1,0 +1,9 @@
+pandas==
+
+qrcode==
+
+PIL==
+
+datetime==
+
+docx==
