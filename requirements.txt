@@ -1,9 +1,8 @@
-pandas==
+###### Requirements without Version Specifiers ######
+# datetime should be included
 
-qrcode==
-
-PIL==
-
-datetime==
-
-docx==
+###### Requirements with Version Specifiers ######
+pandas>=1.2.4
+qrcode>=6.1
+pillow>=8.2.0
+python-docx>=0.8.11

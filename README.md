@@ -1,5 +1,3 @@
-MiSCA-ID-Sticker-Generator
-
 <!--
 *** Template source: https://github.com/othneildrew/Best-README-Template
 ***
@@ -101,7 +99,7 @@ Why?
 
 ### Built With
 
-* [Python 3.7](https://www.python.org/)
+* [Python 3.7.6](https://www.python.org/)
 
 
 
@@ -159,7 +157,7 @@ __Are Duplicants Needed?__<br>
 There is flexibility in Create-Document.py to define how many copies of each sticker ared desired. We started the season with 3 stickers for each rider. In 2021, out of 64 riders, only one went through all three. We used an inkjet printer and the stickers were succeptible to smugging from rain; two stickers were replaced for water damage. After 12 weeks one sticker would not scan because it had become too faded from sun exposure.
 
 
-__Barcode Scanner Requirements__
+__Barcode Scanner Requirements__<br>
 QR codes require a 2D capable barcode scanner. MMBC used a basic [wired 1D 2D barcode scanner](https://www.amazon.com/Evnvn-Scanning-Auto-Sensing-Warehouse-Bookstore/dp/B08D98XQV4/ref=asc_df_B08D98XQV4/?tag=hyprod-20&linkCode=df0&hvadid=475716043645&hvpos=&hvnetw=g&hvrand=562984632817239689&hvpone=&hvptwo=&hvqmt=&hvdev=c&hvdvcmdl=&hvlocint=&hvlocphy=9017117&hvtargid=pla-939626915235&psc=1) in 2021 with success. If power isn't a concern I'd suggest trying a bluetooth one. We found the cord either got in the way or athletes didn't come close enough without prompting. It is not recommended to scan with a barcode scanner directly to a mobile phone. Scanners work like typeboards and phones aren't desired for such quick input. It is possible to use most smartphone cameras as barcode scanners.
 
 

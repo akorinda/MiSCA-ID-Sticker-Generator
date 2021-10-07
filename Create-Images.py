@@ -1,11 +1,11 @@
 """Create scannable code images
 
-Packages: sys, os, pandas, qrcode, PIL, datetime
+Packages: sys, os, pandas, qrcode, PIL, datetime, tkinter
 
 """
 
 __authors__ = "Andrew Korinda"
-__copyright__ = "Copyright 2021, Midland Moutain Bike Crew"
+__copyright__ = "Copyright 2021, Midland Mountain Bike Crew"
 __credits__ = ["Andrew Korinda"]
 __license__ = "GPL-3.0-or-later"
 __version__ = "0.1"
@@ -20,6 +20,7 @@ import pandas
 import qrcode
 from PIL import Image, ImageDraw, ImageFont
 from datetime import date
+from tkinter import filedialog
 
 
 # Constants
@@ -50,7 +51,6 @@ def frame_create(group):
         color=group
     )
 
-    # img = Image.open('Black-Soil_Tall.jpg', mode='r')
     frame_img = frame_img.resize((2000, 2511))
 
     border_img = Image.new(
@@ -88,30 +88,51 @@ if __name__ == '__main__':
     # % Dimensions
     frame_w, frame_h = layer_frame.size
 
+    # Ask for xlsx rider list
+    rider_file = filedialog.askopenfilename(
+        title = 'Open Rider List',
+        filetypes = [("Excel file", "*.xlsx *.xls")]
+    )
+
     # Rider loops
     try:
-        riders = pandas.read_excel('Rider-List_Update.xlsx')
+        riders = pandas.read_excel(rider_file) # 'Rider-List_Update.xlsx')
     except PermissionError:
-        print('Rider-List.xlsx is not accessible. Likely in use by another application.')
+        print(os.path.basename(rider_file) + ' is not accessible. Likely in use by another application.')
         sys.exit(1)
+    except AssertionError:
+        print('No rider list was selected. Exiting')
+        sys.exit(0)
 
-    qrPath = 'QR-Export/' + date.today().strftime('%Y-%m-%d')
+    # ToDo: make the export folder selectable?
+    qrPath = os.path.dirname(rider_file) + '/QR-Export/' + date.today().strftime('%Y-%m-%d')
     if not os.path.exists(qrPath):
         os.makedirs(qrPath)
 
+    # ToDo: make range of riders selectable
     for x in range(riders['RegistrantId'].size):
         if riders['Role'][x] == 'Rider':
+            # ToDo: make data fields selectable
             rider_code = str(int(riders['RegistrantId'][x]))  # + '\t' + \
                         # riders['Firstname'][x] + '\t' + riders['Lastname'][x]
             rider_file =riders['Lastname'][x].title() + ' ' + riders['Firstname'][x].title()
             rider_name = riders['Firstname'][x].title() + '\n' + riders['Lastname'][x].title()
             rider_group = 'white'
 
+            # ToDo: make the code type selectable
             # Resize QR and logo per border definition
             layer_qr = qr_create('')
-            layer_logo = Image.open('MMBC-Tire_2020.jpg', mode='r')
-            logo_dim = round((0.07 * layer_qr.size[0] * layer_qr.size[1]) ** 0.5)
-            layer_logo = layer_logo.resize((logo_dim, logo_dim))
+            logo_file = filedialog.askopenfilename(
+                title = 'Open Center Logo',
+                filetypes = [("Image file", "*.jpg *.jpeg *.png")]
+            )
+            try:
+                layer_logo = Image.open(logo_file, mode='r')
+                logo_dim = round((0.07 * layer_qr.size[0] * layer_qr.size[1]) ** 0.5)
+                layer_logo = layer_logo.resize((logo_dim, logo_dim))
+            except:
+                logo_n = 1
+                layer_logo = Image.new('RGB', (logo_n, logo_n))
 
             # % Dimensions
             logo_w, logo_h = layer_logo.size
