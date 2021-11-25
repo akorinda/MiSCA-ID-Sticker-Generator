@@ -19,7 +19,6 @@ import os
 import pandas
 import qrcode
 from PIL import Image, ImageDraw, ImageFont
-from datetime import date
 from tkinter import filedialog
 
 
@@ -78,6 +77,72 @@ def set_font(default_font_size):
     return default_font
 
 
+def handle_logo(int_path, base_img):
+    logo_file = filedialog.askopenfilename(
+        title='Open Center Logo',
+        filetypes=[("Image file", "*.jpg *.jpeg *.png")],
+        initialdir=int_path
+    )
+
+    try:
+        logo_img = Image.open(logo_file, mode='r')
+        logo_dim = round((0.07 * base_img.size[0] * base_img.size[1]) ** 0.5)
+        logo_img = logo_img.resize((logo_dim, logo_dim))
+    except AttributeError:
+        logo_n = 1
+        logo_img = Image.new('RGB', (logo_n, logo_n))
+
+    return logo_img
+
+
+def data_file(def_title):
+    selected_file = filedialog.askopenfilename(
+        title=def_title,
+        filetypes=[("Excel file", "*.xlsx *.xls")]
+    )
+
+    # Rider loops
+    try:
+        data_rows = pandas.read_excel(selected_file)  # 'Rider-List_Update.xlsx')
+    except PermissionError:
+        print(os.path.basename(selected_file) + ' is not accessible. Likely in use by another application.')
+        sys.exit(1)
+    except AssertionError:
+        print('No rider list was selected. Exiting')
+        sys.exit(0)
+
+    return selected_file, data_rows
+
+
+def temp_img_path(int_path):
+    try:
+        img_path = filedialog.askdirectory(
+            title='QR Images Save Location',
+            initialdir=int_path
+        )
+
+        if img_path == '':
+            print('No output path was selected. Exiting')
+            sys.exit(0)
+    except FileNotFoundError:
+        print('The system cannot find the path specified. Exiting')
+        sys.exit(0)
+    if not os.path.exists(img_path):
+        try:
+            os.makedirs(img_path)
+        except PermissionError:
+            print(img_path + ' is not accessible.')
+            sys.exit(1)
+        except AssertionError:
+            print('No output path was selected. Exiting')
+            sys.exit(0)
+        except FileNotFoundError:
+            print('The system cannot find the path specified. Exiting')
+            sys.exit(0)
+
+    return img_path
+
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     # Prepare
@@ -88,26 +153,24 @@ if __name__ == '__main__':
     # % Dimensions
     frame_w, frame_h = layer_frame.size
 
+    # ToDo: resolved error in PIL Image when from tkinter import * and Tk() is used
+    # root = Tk()  # pointing root to Tk() to use it as Tk() in program.
+    # root.withdraw()  # Hides small tkinter window.
+    # root.attributes('-topmost', True)  # Opened windows will be active. above all windows despite of selection.
+
     # Ask for xlsx rider list
-    rider_file = filedialog.askopenfilename(
-        title = 'Open Rider List',
-        filetypes = [("Excel file", "*.xlsx *.xls")]
-    )
+    rider_file, riders = data_file('Open Rider List')
 
-    # Rider loops
-    try:
-        riders = pandas.read_excel(rider_file) # 'Rider-List_Update.xlsx')
-    except PermissionError:
-        print(os.path.basename(rider_file) + ' is not accessible. Likely in use by another application.')
-        sys.exit(1)
-    except AssertionError:
-        print('No rider list was selected. Exiting')
-        sys.exit(0)
+    # Select where image files get saved
+    qrPath = temp_img_path(os.path.dirname(rider_file))
 
-    # ToDo: make the export folder selectable?
-    qrPath = os.path.dirname(rider_file) + '/QR-Export/' + date.today().strftime('%Y-%m-%d')
-    if not os.path.exists(qrPath):
-        os.makedirs(qrPath)
+    # Resize QR and logo per border definition
+    layer_qr = qr_create('')
+    layer_logo = handle_logo(os.path.dirname(rider_file), layer_qr)
+    # % Dimensions
+    logo_w, logo_h = layer_logo.size
+    qr_w, qr_h = layer_qr.size
+    qr_buffer = round((frame_w - qr_w) / 2)
 
     # ToDo: make range of riders selectable
     for x in range(riders['RegistrantId'].size):
@@ -115,29 +178,11 @@ if __name__ == '__main__':
             # ToDo: make data fields selectable
             rider_code = str(int(riders['RegistrantId'][x]))  # + '\t' + \
                         # riders['Firstname'][x] + '\t' + riders['Lastname'][x]
-            rider_file =riders['Lastname'][x].title() + ' ' + riders['Firstname'][x].title()
+            rider_file = riders['Lastname'][x].title() + ' ' + riders['Firstname'][x].title()
             rider_name = riders['Firstname'][x].title() + '\n' + riders['Lastname'][x].title()
             rider_group = 'white'
 
             # ToDo: make the code type selectable
-            # Resize QR and logo per border definition
-            layer_qr = qr_create('')
-            logo_file = filedialog.askopenfilename(
-                title = 'Open Center Logo',
-                filetypes = [("Image file", "*.jpg *.jpeg *.png")]
-            )
-            try:
-                layer_logo = Image.open(logo_file, mode='r')
-                logo_dim = round((0.07 * layer_qr.size[0] * layer_qr.size[1]) ** 0.5)
-                layer_logo = layer_logo.resize((logo_dim, logo_dim))
-            except:
-                logo_n = 1
-                layer_logo = Image.new('RGB', (logo_n, logo_n))
-
-            # % Dimensions
-            logo_w, logo_h = layer_logo.size
-            qr_w, qr_h = layer_qr.size
-            qr_buffer = round((frame_w - qr_w) / 2)
 
             # Create layers
             layer_qr = qr_create(rider_code)
@@ -172,9 +217,10 @@ if __name__ == '__main__':
             while True:
                 font_size = font_size - 20
                 font = set_font(font_size)
-                text_vert_pos = frame_h / 2 + qr_h / 2 - qr_buffer / 2 # was + qr_buffer
+                text_vert_pos = frame_h / 2 + qr_h / 2 - qr_buffer / 2  # was + qr_buffer
 
-                if (font.getsize(name_limit)[0] < qr_w) or (font.size <= 0): break
+                if (font.getsize(name_limit)[0] < qr_w) or (font.size <= 0):
+                    break
 
             name_color = 'black'
 
