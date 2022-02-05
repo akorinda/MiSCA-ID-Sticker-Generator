@@ -143,8 +143,20 @@ def temp_img_path(int_path):
     return img_path
 
 
-# Press the green button in the gutter to run the script.
+def add_to_info_list(current_list, available_list, add_index:int):
+    add_item = available_list[add_index]
+    current_list.append(add_item)
+        
+    return current_list
+
+
+# Run the program
 if __name__ == '__main__':
+    print("\n----------- Welcome to Making QR Code Rider Sheets -----------")
+    print("- 'X' to return not implemented")
+    print("- 'H' for help text not implemented")
+    print("- 'Q' to quit the program not implemented")
+    
     # Prepare
     # % Layers
     layer_frame = frame_create('white')
@@ -159,25 +171,77 @@ if __name__ == '__main__':
     # root.attributes('-topmost', True)  # Opened windows will be active. above all windows despite of selection.
 
     # Ask for xlsx rider list
+    print("\n\nProvide the file with the rider list. An Excel formant, *.xls or *.xlsx is expected")
     rider_file, riders = data_file('Open Rider List')
+    print(f"Using {os.path.basename(rider_file)} for rider information")
 
     # Select where image files get saved
+    print("\nProvide a folder where QR images can be temporarily stored")
     qrPath = temp_img_path(os.path.dirname(rider_file))
+    print(f"Using {qrPath} as the temporary image folder")
 
     # Resize QR and logo per border definition
     layer_qr = qr_create('')
+    print("\nAskingif logo desired not implemented")
     layer_logo = handle_logo(os.path.dirname(rider_file), layer_qr)
     # % Dimensions
     logo_w, logo_h = layer_logo.size
     qr_w, qr_h = layer_qr.size
     qr_buffer = round((frame_w - qr_w) / 2)
-
+    
+    print("\nWhat information should be in the QR code, in order?")
+    rider_info = []
+    iList_size = 9
+    xStart = 0
+    continue_selection:bool = True
+    delim = '\t'
+    while continue_selection:
+        print(f"\nCurrent information: {delim.join(rider_info)}")
+        print("Next item to include:")
+        iList = 1
+        dList = []
+        
+        for x in range(xStart, min(xStart + iList_size, riders.columns.size)):
+            print(f"     {iList}. {riders.columns[x]}")
+            iList += 1
+            dList.append(riders.columns[x])
+        print("     0. Show more columns [More]")
+        print("     99. Done with selections [Done]")
+        print("     *. [Clear list]")
+        
+        info_selection = input("Choice (1:9): ")
+        if info_selection.lower() == 'q':
+            print('\n\nThe user choose to quit the program')
+            sys.exit()
+        elif info_selection.lower() == "more" or info_selection == '0':
+            xStart += iList_size
+            if xStart > riders.columns.size: xStart = 0
+        elif info_selection.lower() == 'done' or info_selection == '99':
+            if len(rider_info) > 0:
+                continue_selection = False
+            else:
+                print('\nAt least one selection must be made, currently there are none.')
+        elif info_selection.lower() == 'clear list' or info_selection == '*':
+            rider_info = []
+            xStart = 0
+        elif info_selection.lower() in map(lambda x:x.lower(), dList):
+            info_selection = [var.lower() for var in dList].index(info_selection)
+            rider_info = add_to_info_list(rider_info, 
+                                          dList,
+                                          info_selection)
+        elif info_selection in map(str, range(1,iList_size + 1)):
+            rider_info = add_to_info_list(rider_info, 
+                                          dList, 
+                                          int(info_selection) - 1)
+        else:
+            print("\n!!!!! Selection was not recognized !!!!!")
+    
+    
     # ToDo: make range of riders selectable
-    for x in range(riders['RegistrantId'].size):
-        if riders['Role'][x] == 'Rider':
+    for x in range(len(riders):
+        if riders['Role'][x] == 'Rider': #Filters
             # ToDo: make data fields selectable
-            rider_code = str(int(riders['RegistrantId'][x]))  # + '\t' + \
-                        # riders['Firstname'][x] + '\t' + riders['Lastname'][x]
+            rider_code = delim.join([str(var) for var in rider_info])
             rider_file = riders['Lastname'][x].title() + ' ' + riders['Firstname'][x].title()
             rider_name = riders['Firstname'][x].title() + '\n' + riders['Lastname'][x].title()
             rider_group = 'white'
