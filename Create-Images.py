@@ -156,6 +156,15 @@ if __name__ == '__main__':
     print("- 'X' to return not implemented")
     print("- 'H' for help text not implemented")
     print("- 'Q' to quit the program not implemented")
+    print("\nThe order of operations is not yet configurable.\nIt is:")
+    print("1) Select the rider data file")
+    print("3) ***Selection of worksheet not implemented")
+    print("4) Select a temperary folder of the produced images")
+    print("5) Select the columns which will be part of the qr code or barcode")
+    print("6) ***Filters to be implemented***")
+    print("7) ***Selection of qr code or barcode not implemented***")
+    print("8) Images are created")
+    print("9) Execute the create-document.py script")
     
     # Prepare
     # % Layers
@@ -207,6 +216,7 @@ if __name__ == '__main__':
             dList.append(riders.columns[x])
         print("     0. Show more columns [More]")
         print("     99. Done with selections [Done]")
+        print("     ~. Remove last selection [Backspace]")
         print("     *. [Clear list]")
         
         info_selection = input("Choice (1:9): ")
@@ -224,6 +234,9 @@ if __name__ == '__main__':
         elif info_selection.lower() == 'clear list' or info_selection == '*':
             rider_info = []
             xStart = 0
+        elif info_selection.lower() == 'backspace' or info_selection =='*':
+            if len(rider_info) > 0:
+                rider_info.pop()
         elif info_selection.lower() in map(lambda x:x.lower(), dList):
             info_selection = [var.lower() for var in dList].index(info_selection)
             rider_info = add_to_info_list(rider_info, 
@@ -235,10 +248,16 @@ if __name__ == '__main__':
                                           int(info_selection) - 1)
         else:
             print("\n!!!!! Selection was not recognized !!!!!")
+            print("Options available at this are:")
+            print("Number without period or column name")
+            print("0 or More")
+            print("99 or Done")
+            print("~ or Backspace")
+            print("* or Clear list")
     
     
     # ToDo: make range of riders selectable
-    for x in range(len(riders):
+    for x in range(len(riders)):
         if riders['Role'][x] == 'Rider': #Filters
             # ToDo: make data fields selectable
             rider_code = delim.join([str(var) for var in rider_info])
