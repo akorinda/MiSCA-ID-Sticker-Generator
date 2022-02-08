@@ -95,6 +95,21 @@ def handle_logo(int_path, base_img):
     return logo_img
 
 
+def display_options(prime_list, extend_list, x_pos, options_size):
+    input_index = 1
+    options_list = []
+        
+    for x in range(x_pos, min(x_pos + options_size, len(prime_list))):
+        print(f"     {input_index}. {prime_list[x]}")
+        input_index += 1
+        options_list.append(prime_list[x])
+        
+    for x in range(len(extend_list)):
+        print(f"{extend_list[x]}")
+        
+    return options_list
+
+
 def data_file(def_title):
     selected_file = filedialog.askopenfilename(
         title=def_title,
@@ -113,14 +128,12 @@ def data_file(def_title):
         
         while continue_selection:
             print("\nWhich worksheet contains the rider data?")
-            iList = 1
-            dList = []
+            xtraList = ["     0. Show more columns [More]"]
             
-            for x in range(xStart, min(xStart + iList_size, len(data_book.sheet_names))):
-                print(f"     {iList}. {data_book.sheet_names[x]}")
-                iList += 1
-                dList.append(data_book.sheet_names[x])
-            print("     0. Show more columns [More]")
+            dList = display_options(data_book.sheet_names,
+                                    xtraList,
+                                    xStart,
+                                    iList_size)
             
             info_selection = input(f"Choice (1:{iList_size}): ")
             if info_selection.lower() == 'q':
@@ -129,10 +142,10 @@ def data_file(def_title):
             elif info_selection.lower() == "more" or info_selection == '0':
                 xStart += iList_size
                 if xStart >  len(data_book.sheet_names): xStart = 0
-            elif info_selection.lower() in map(lambda x:x.lower(), dList):
+            elif info_selection.lower() in map(lambda x:x.lower(), data_book.sheet_names):
                 info_selection = [var.lower() for var in dList].index(info_selection)
                 sheet_select = add_to_info_list(sheet_select, 
-                                              dList,
+                                              data_book.sheet_names,
                                               info_selection)
                 continue_selection = False
             elif info_selection in map(str, range(1,iList_size + 1)):
@@ -142,7 +155,7 @@ def data_file(def_title):
                 continue_selection = False
             else:
                 print("\n!!!!! Selection was not recognized !!!!!")
-                print("Options available at this are:")
+                print("Options available at this stage are:")
                 print("Number without period or column name")
                 print("0 or More")
             
@@ -252,17 +265,15 @@ if __name__ == '__main__':
     while continue_selection:
         print(f"\nCurrent information: {delim.join(rider_info)}")
         print("Next item to include:")
-        iList = 1
-        dList = []
+        xtraList = ["     0. Show more columns [More]",
+                    "     99. Done with selections [Done]",
+                    "     ~. Remove last selection [Backspace]",
+                    "     *. [Clear list]"]
         
-        for x in range(xStart, min(xStart + iList_size, riders.columns.size)):
-            print(f"     {iList}. {riders.columns[x]}")
-            iList += 1
-            dList.append(riders.columns[x])
-        print("     0. Show more columns [More]")
-        print("     99. Done with selections [Done]")
-        print("     ~. Remove last selection [Backspace]")
-        print("     *. [Clear list]")
+        dList = display_options(riders.columns,
+                                xtraList,
+                                xStart,
+                                iList_size)
         
         info_selection = input("Choice (1:9): ")
         if info_selection.lower() == 'q':
@@ -279,13 +290,13 @@ if __name__ == '__main__':
         elif info_selection.lower() == 'clear list' or info_selection == '*':
             rider_info = []
             xStart = 0
-        elif info_selection.lower() == 'backspace' or info_selection =='*':
+        elif info_selection.lower() == 'backspace' or info_selection =='~':
             if len(rider_info) > 0:
                 rider_info.pop()
-        elif info_selection.lower() in map(lambda x:x.lower(), dList):
-            info_selection = [var.lower() for var in dList].index(info_selection)
+        elif info_selection.lower() in map(lambda x:x.lower(), riders.columns):
+            info_selection = [var.lower() for var in riders.columns].index(info_selection)
             rider_info = add_to_info_list(rider_info, 
-                                          dList,
+                                          riders.columns,
                                           info_selection)
         elif info_selection in map(str, range(1,iList_size + 1)):
             rider_info = add_to_info_list(rider_info, 
@@ -293,7 +304,7 @@ if __name__ == '__main__':
                                           int(info_selection) - 1)
         else:
             print("\n!!!!! Selection was not recognized !!!!!")
-            print("Options available at this are:")
+            print("Options available at this stage are:")
             print("Number without period or column name")
             print("0 or More")
             print("99 or Done")
