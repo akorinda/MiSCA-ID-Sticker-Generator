@@ -103,7 +103,52 @@ def data_file(def_title):
 
     # Rider loops
     try:
-        data_rows = pandas.read_excel(selected_file)  # 'Rider-List_Update.xlsx')
+        data_book = pandas.ExcelFile(selected_file)
+        
+        # Select the worksheet from the workbook
+        sheet_select = []
+        iList_size = 9
+        xStart = 0
+        continue_selection:bool = True
+        
+        while continue_selection:
+            print("\nWhich worksheet contains the rider data?")
+            iList = 1
+            dList = []
+            
+            for x in range(xStart, min(xStart + iList_size, len(data_book.sheet_names))):
+                print(f"     {iList}. {data_book.sheet_names[x]}")
+                iList += 1
+                dList.append(data_book.sheet_names[x])
+            print("     0. Show more columns [More]")
+            
+            info_selection = input(f"Choice (1:{iList_size}): ")
+            if info_selection.lower() == 'q':
+                print('\n\nThe user choose to quit the program')
+                sys.exit()
+            elif info_selection.lower() == "more" or info_selection == '0':
+                xStart += iList_size
+                if xStart >  len(data_book.sheet_names): xStart = 0
+            elif info_selection.lower() in map(lambda x:x.lower(), dList):
+                info_selection = [var.lower() for var in dList].index(info_selection)
+                sheet_select = add_to_info_list(sheet_select, 
+                                              dList,
+                                              info_selection)
+                continue_selection = False
+            elif info_selection in map(str, range(1,iList_size + 1)):
+                sheet_select = add_to_info_list(sheet_select, 
+                                              dList, 
+                                              int(info_selection) - 1)
+                continue_selection = False
+            else:
+                print("\n!!!!! Selection was not recognized !!!!!")
+                print("Options available at this are:")
+                print("Number without period or column name")
+                print("0 or More")
+            
+        selected_sheet = sheet_select[0]
+        data_rows = data_book.parse(sheet_name = selected_sheet)
+        
     except PermissionError:
         print(os.path.basename(selected_file) + ' is not accessible. Likely in use by another application.')
         sys.exit(1)
@@ -111,7 +156,7 @@ def data_file(def_title):
         print('No rider list was selected. Exiting')
         sys.exit(0)
 
-    return selected_file, data_rows
+    return selected_file, selected_sheet, data_rows
 
 
 def temp_img_path(int_path):
@@ -181,9 +226,9 @@ if __name__ == '__main__':
 
     # Ask for xlsx rider list
     print("\n\nProvide the file with the rider list. An Excel formant, *.xls or *.xlsx is expected")
-    rider_file, riders = data_file('Open Rider List')
-    print(f"Using {os.path.basename(rider_file)} for rider information")
-
+    rider_file, rider_sheet, riders = data_file('Open Rider List')
+    print(f'Using "{os.path.basename(rider_file)}",\n  Sheet "{rider_sheet}" for rider information')
+    
     # Select where image files get saved
     print("\nProvide a folder where QR images can be temporarily stored")
     qrPath = temp_img_path(os.path.dirname(rider_file))
