@@ -78,11 +78,23 @@ def set_font(default_font_size):
 
 
 def handle_logo(int_path, base_img):
-    logo_file = filedialog.askopenfilename(
-        title='Open Center Logo',
-        filetypes=[("Image file", "*.jpg *.jpeg *.png")],
-        initialdir=int_path
-    )
+    valid_selection:bool = False
+    print('\nWith QR codes you can add a logo to the center.')
+    print('A downside is the qr code will have less error handling.')
+    
+    while not valid_selection:
+        confirm_desire = input('Will you like to add a logo? [Y,N]: ')
+        
+        if confirm_desire.lower() in ['y', 'yes']:
+            logo_file = filedialog.askopenfilename(
+                title='Open Center Logo',
+                filetypes=[("Image file", "*.jpg *.jpeg *.png")],
+                initialdir=int_path
+            )
+            valid_selection = True
+        elif confirm_desire.lower() in ['n', 'no']:
+            logo_file = ''
+            valid_selection = True
 
     try:
         logo_img = Image.open(logo_file, mode='r')
@@ -110,7 +122,62 @@ def display_options(prime_list, extend_list, x_pos, options_size):
     return options_list
 
 
+def selection_evaluation(prime_inputs, extend_inputs, user_input,
+                         output_list,
+                         list_step:int, list_max:int, x_pos:int,
+                         min_selections:int):
+    global universal_input_options
+    valid_input:bool = True
+    continue_requests:bool = True
+    user_input = user_input.lower()
+    
+    if user_input in universal_input_options:
+        print('\n\nIn the future thiswill goto universal evaluation function but for now:')
+        print('\n\nThe user choose to quit the program')
+        sys.exit()
+    elif user_input in extend_inputs:
+        if user_input in ["more", '0']:
+            x_pos += list_step
+            if x_pos >  list_max: x_pos = 0
+        elif user_input in ['done', '99']:
+            if len(output_list) >= min_selections:
+                continue_requests = False
+            else:
+                print(f'\nAt least {min_selections} selection(s) must be made, currently there are {len(output_list)}.')
+                continue_requests = True
+        elif user_input in ['clear list', '*']:
+            output_list = []
+            x_pos = 0
+        elif user_input in ['backspace', '~']:
+            if len(output_list) > 0:
+                output_list.pop()
+    elif user_input in prime_inputs[0]: # Index given
+        output_list = add_to_info_list(output_list, 
+                                       prime_inputs[1], 
+                                       x_pos + int(user_input) - 1)
+    elif user_input in prime_inputs[1]: # String given
+        user_input = list(prime_inputs[1]).index(user_input)
+        output_list = add_to_info_list(output_list, 
+                                       prime_inputs[1],
+                                       user_input)
+    else:
+        valid_input = False
+        print("\n!!!!! Selection was not recognized !!!!!")
+        print("Options available at this stage are:")
+        print("  Number without period or neighboring text")
+        for x in range(0, len(extend_inputs), 2):
+            try:
+                print(f'  "{extend_inputs[x]}" or "{extend_inputs[x+1]}"')
+            except IndexError:
+                print(f'  "{extend_inputs[x]}"')
+        print('  Type "h" or "help" at input for more help information')
+                
+    return output_list, x_pos, continue_requests, valid_input
+
+
 def data_file(def_title):
+    global universal_input_options
+    
     selected_file = filedialog.askopenfilename(
         title=def_title,
         filetypes=[("Excel file", "*.xlsx *.xls")]
@@ -135,8 +202,8 @@ def data_file(def_title):
                                     xStart,
                                     iList_size)
             
-            info_selection = input(f"Choice (1:{iList_size}): ")
-            if info_selection.lower() == 'q':
+            info_selection = input(f"Choice (1:{min(len(dList), iList_size)}): ")
+            if info_selection.lower() in universal_input_options:
                 print('\n\nThe user choose to quit the program')
                 sys.exit()
             elif info_selection.lower() == "more" or info_selection == '0':
@@ -202,7 +269,7 @@ def temp_img_path(int_path):
 
 
 def add_to_info_list(current_list, available_list, add_index:int):
-    add_item = available_list[add_index]
+    add_item = list(available_list)[add_index]
     current_list.append(add_item)
         
     return current_list
@@ -214,6 +281,9 @@ if __name__ == '__main__':
     print("- 'X' to return not implemented")
     print("- 'H' for help text not implemented")
     print("- 'Q' to quit the program not implemented")
+    universal_input_options = ['x', 'exit',
+                               'h', 'help',
+                               'q', 'quit']
     print("\nThe order of operations is not yet configurable.\nIt is:")
     print("1) Select the rider data file")
     print("3) ***Selection of worksheet not implemented")
@@ -249,7 +319,7 @@ if __name__ == '__main__':
 
     # Resize QR and logo per border definition
     layer_qr = qr_create('')
-    print("\nAskingif logo desired not implemented")
+    # Option for adding a logo to the center of the qr code
     layer_logo = handle_logo(os.path.dirname(rider_file), layer_qr)
     # % Dimensions
     logo_w, logo_h = layer_logo.size
@@ -275,8 +345,8 @@ if __name__ == '__main__':
                                 xStart,
                                 iList_size)
         
-        info_selection = input("Choice (1:9): ")
-        if info_selection.lower() == 'q':
+        info_selection = input(f"Choice (1:{min(len(dList), iList_size)}): ")
+        if info_selection.lower() in universal_input_options:
             print('\n\nThe user choose to quit the program')
             sys.exit()
         elif info_selection.lower() == "more" or info_selection == '0':
@@ -311,6 +381,113 @@ if __name__ == '__main__':
             print("~ or Backspace")
             print("* or Clear list")
     
+    
+    print('\nWhat if any filters should be applied?')
+    filter_dict = {}
+    iList_size = 9
+    continue_selection:bool = True
+    valid_filter:bool = False
+    delim = '\n  '
+    delim_filters = ': '
+    delim_select = ', '
+    xtraList = [["     0. Show more columns [More]",
+                 "     99. Done with selections [Done]",
+                 "     ~. Remove last selection [Backspace]",
+                 "     *. [Clear list]"],
+                ['0', 'more',
+                 '99', 'done',
+                 '~', 'backspace',
+                 '*', 'clear list']]
+    while continue_selection and not valid_filter:
+        filter_list = []
+        # Select a column to filter
+        while not valid_filter:
+            xStart = 0
+            filter_info = [list(filter_dict.keys()), list(filter_dict.values())]
+            for x in range(len(filter_info[0])):
+                try:
+                    filter_list.append(delim_filters.join([filter_info[0][x],
+                                                           delim_select.join(filter_info[1][x])]))
+                except IndexError:
+                    filter_list = []
+                    
+            if len(filter_list) > 0:
+                print(f"\nCurrent filters ↓↓↓\n  {delim.join(filter_list)}")
+                print("Next column to include:")
+            else:
+                print('Column to filter:')
+             
+            dList = display_options(riders.columns,
+                                    xtraList[0],
+                                    xStart,
+                                    iList_size)
+            
+            info_selection = input(f"Choice (1:{min(len(dList), iList_size)}): ")
+            
+            info_ints = list(map(str, range(1,iList_size + 1)))
+            info_names = list(map(lambda x:x.lower(), riders.columns))
+            
+            filter_info[0], xStart, continue_selection, valid_filter = selection_evaluation([info_ints,info_names],
+                                                                                            xtraList[1],
+                                                                                            info_selection,
+                                                                                            filter_info[0],
+                                                                                            iList_size,
+                                                                                            riders.columns.size,
+                                                                                            xStart,
+                                                                                            0)
+        if valid_filter and continue_selection:
+            filter_append = riders.columns[list(info_names).index(filter_info[0][-1])]
+        else:
+            break
+        try:
+            filter_dict[filter_append]
+        except KeyError:
+            filter_dict[filter_append] = []
+        # filter_info[0][-1] = riders.columns[list(info_names).index(filter_info[0][-1])]
+        # Now that the column is valid, select a valid value within that column
+        valid_filter = False
+        while not valid_filter or continue_selection:
+            valid_filter = False
+            xStart = 0
+            print(f'Select a value to filter for {filter_append}:')
+            
+            try: 
+                filter_elements = list(map(lambda x:str(x),
+                                           list(riders[filter_append].drop_duplicates())))
+            except KeyError:
+                print(f'"{filter_info[0][-1]}" was not found in {riders.columns}')
+                sys.exit()
+            
+            dList = display_options(filter_elements,
+                                    xtraList[0],
+                                    xStart,
+                                    iList_size)
+            
+            info_selection = input(f"Choice (1:{min(len(dList), iList_size)}): ")
+            
+            info_ints = list(map(str, range(1,iList_size + 1)))
+            info_names = list(map(lambda x:x.lower(), filter_elements))
+                        
+            filter_info[1], xStart, continue_selection, valid_filter = selection_evaluation([info_ints,info_names],
+                                                                                            xtraList[1],
+                                                                                            info_selection,
+                                                                                            filter_info[1],
+                                                                                            iList_size,
+                                                                                            len(filter_elements),
+                                                                                            xStart,
+                                                                                            1)
+            
+            if valid_filter and continue_selection:
+                selection_append = filter_elements[list(info_names).index(filter_info[1][-1])]
+                filter_dict[filter_append].append(selection_append)
+                # filter_info[1][-1] = filter_elements[list(info_names).index(filter_info[1][-1])]
+        continue_selection, valid_filter = True, False
+                
+    # Ask for first text row (suggest first name)
+    
+    # Ask for second text row (suggest last name)
+    
+    # Present a sample image for approval    
     
     # ToDo: make range of riders selectable
     for x in range(len(riders)):
