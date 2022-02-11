@@ -19,10 +19,56 @@ import os
 import pandas
 import qrcode
 from PIL import Image, ImageDraw, ImageFont
-from tkinter import filedialog
+from tkinter import filedialog, Tk, Label, Entry, Button, Radiobutton, Checkbutton
 
 
 # Constants
+
+def window_creation():
+    window = Tk()
+    window.title('MiSCA ID Sticker Generator')
+
+    row_num = 0
+    lbl_1 = Label(window, text='1. ')
+    lbl_1.grid(column=0, row=row_num)
+    lbl_source = Label(window, text='Rider data source file')
+    lbl_source.grid(column=1, row=row_num)
+    btn_source = Button(window, text='Select source', command=data_file('Open Rider List'))
+    btn_source.grid(column=2, row=row_num)
+    lbl_select_source = Entry(window, width=100)
+    lbl_select_source.insert(0, '')
+    lbl_select_source.grid(column=0, row=row_num + 1)
+
+    row_num += 2
+    lbl_1 = Label(window, text='2. ')
+    lbl_1.grid(column=0, row=row_num)
+    lbl_sticker_type = Label(window, text='ID sticker type')
+    lbl_sticker_type.grid(column=1, row=row_num)
+
+    row_num += 2
+    lbl_1 = Label(window, text='3. ')
+    lbl_1.grid(column=0, row=row_num)
+    lbl_img_dest = Label(window, text='Sticker image folder')
+    lbl_img_dest.grid(column=1, row=row_num)
+    btn_img_dest = Button(window, text='Select folder', command=temp_img_path(lbl_select_source.get()))
+    btn_img_dest.grid(column=2, row=row_num)
+    lbl_select_img_dest = Entry(window, width=100)
+    lbl_select_img_dest.insert(0, '')
+    lbl_select_img_dest.grid(column=0, row=row_num + 1)
+
+    row_num += 2
+    lbl_1 = Label(window, text='4. ')
+    lbl_1.grid(column=0, row=row_num)
+    lbl_final_doc = Label(window, text='Output document')
+    lbl_final_doc.grid(column=1, row=row_num)
+    btn_final_doc = Button(winow, text='Select output')
+    btn_final_doc.grid(column=2, row=row_num)
+    lbl_select_doc = Entry(window, width=100)
+    lbl_select_doc.insert(0, '')
+    lbl_select_doc.grid(column=0, row=row_num + 1)
+
+    return window
+
 
 def qr_create(txt_data):
     qr = qrcode.QRCode(
@@ -154,6 +200,7 @@ if __name__ == '__main__':
     frame_w, frame_h = layer_frame.size
 
     # ToDo: resolved error in PIL Image when from tkinter import * and Tk() is used
+    root = window_creation()
     # root = Tk()  # pointing root to Tk() to use it as Tk() in program.
     # root.withdraw()  # Hides small tkinter window.
     # root.attributes('-topmost', True)  # Opened windows will be active. above all windows despite of selection.
@@ -239,4 +286,4 @@ if __name__ == '__main__':
             rider_qr = rider_qr.resize((300, 373))
             rider_qr.save(qrPath + '/' + rider_file + '.png')
 
-# rider_qr.show()
+    root.destroy()
