@@ -410,6 +410,13 @@ if __name__ == '__main__':
                                                            delim_select.join(filter_info[1][x])]))
                 except IndexError:
                     filter_list = []
+                except NameError:
+                    filter_list = []
+                    try:
+                        filter_list.append(delim_filters.join([filter_info[0][x],
+                                                               delim_select.join(filter_info[1][x])]))
+                    except IndexError:
+                        filter_list = []
                     
             if len(filter_list) > 0:
                 print(f"\nCurrent filters ↓↓↓\n  {delim.join(filter_list)}")
@@ -483,6 +490,31 @@ if __name__ == '__main__':
                 # filter_info[1][-1] = filter_elements[list(info_names).index(filter_info[1][-1])]
         continue_selection, valid_filter = True, False
                 
+    # Apply the filter
+    # Brute force method
+    filter_info = [list(filter_dict.keys()), list(filter_dict.values())]
+    query = ''
+    delim_or = ' or '
+    delim_and = ' and '
+    delim_eval = ' == '
+    for x in range(len(filter_info[0])):
+        if x == 0:
+            query = "'"
+        else:
+            query = query + delim_and
+        for y in range(len(filter_info[1][x])):
+            if y == 0:
+                delim_or = '('
+            else:
+                delim_or = ' or '
+            query = query + delim_or + '`' + filter_info[0][x] + '`' + delim_eval + '"' + filter_info[1][x][y] + '"'
+            if y == len(filter_info[1][x]) - 1:
+                query = query + ')'
+    query = query + "'"
+    riders = riders.query(eval(query))
+
+    # Check there is data remaining, if not return to filter selection
+
     # Ask for first text row (suggest first name)
     
     # Ask for second text row (suggest last name)
