@@ -16,8 +16,11 @@ __status__ = "Prototype"
 # Imports
 import sys
 import os
+import time
+
 import pandas
 import qrcode
+import threading, queue
 from PIL import Image, ImageDraw, ImageFont
 from tkinter import filedialog
 
@@ -132,7 +135,7 @@ def selection_evaluation(prime_inputs, extend_inputs, user_input,
     user_input = user_input.lower()
     
     if user_input in universal_input_options:
-        print('\n\nIn the future thiswill goto universal evaluation function but for now:')
+        print('\n\nIn the future this will goto universal evaluation function but for now:')
         print('\n\nThe user choose to quit the program')
         sys.exit()
     elif user_input in extend_inputs:
@@ -145,6 +148,7 @@ def selection_evaluation(prime_inputs, extend_inputs, user_input,
             else:
                 print(f'\nAt least {min_selections} selection(s) must be made, currently there are {len(output_list)}.')
                 continue_requests = True
+                valid_input = False
         elif user_input in ['clear list', '*']:
             output_list = []
             x_pos = 0
@@ -175,66 +179,115 @@ def selection_evaluation(prime_inputs, extend_inputs, user_input,
     return output_list, x_pos, continue_requests, valid_input
 
 
+my_queue = queue.Queue()
+
+def storeInQueue(f):
+    def wrapper(*args):
+        global my_queue
+        my_queue.put(f(*args))
+    return wrapper
+
+
+@storeInQueue
+def load_excel(declared_file):
+    try:
+        book = pandas.ExcelFile(declared_file)
+    except PermissionError:
+        print(os.path.basename(declared_file) + ' is not accessible. Likely in use by another application.')
+        book = 'PermissionError'
+    except AssertionError:
+        print('No rider list was selected. Exiting')
+        book = 'AssertionError'
+    return book
+
+
+def spinner(text):
+    if len(text) < 17:
+        text = text + '.'
+    else:
+        text = 'Loading...'
+    print(f'\r{text}', end='', flush=True)
+    return text
+
+
 def data_file(def_title):
-    global universal_input_options
+    global universal_input_options, my_queue
     
     selected_file = filedialog.askopenfilename(
         title=def_title,
         filetypes=[("Excel file", "*.xlsx *.xls")]
     )
 
-    # Rider loops
-    try:
-        data_book = pandas.ExcelFile(selected_file)
-        
-        # Select the worksheet from the workbook
-        sheet_select = []
-        iList_size = 9
-        xStart = 0
-        continue_selection:bool = True
-        
-        while continue_selection:
+    load_indicator = "Loading.."
+
+    t = threading.Thread(target=load_excel, args=(selected_file, ))
+    t.start()
+    while t.is_alive():
+        load_indicator = spinner(load_indicator)
+        time.sleep(1)
+
+    data_book = my_queue.get()
+    if data_book == 'PermissionError':
+        sys.exit(1)
+    elif data_book == 'AssertionError':
+        sys.exit(0)
+    elif isinstance(data_book, pandas.ExcelFile):
+        print('[Complete]')
+    else:
+        print('\n!!!!! Unrecognized data_book Returned !!!!!')
+        print(f'{data_book}')
+        sys.exit(1)
+
+    # Select the worksheet from the workbook
+    sheet_select = []
+    iList_size = 9
+    xStart = 0
+    continue_selection: bool = True
+
+    while continue_selection:
+        if len(data_book.sheet_names) > 1:
             print("\nWhich worksheet contains the rider data?")
             xtraList = ["     0. Show more columns [More]"]
-            
+
             dList = display_options(data_book.sheet_names,
                                     xtraList,
                                     xStart,
                                     iList_size)
-            
+
             info_selection = input(f"Choice (1:{min(len(dList), iList_size)}): ")
             if info_selection.lower() in universal_input_options:
                 print('\n\nThe user choose to quit the program')
                 sys.exit()
             elif info_selection.lower() == "more" or info_selection == '0':
                 xStart += iList_size
-                if xStart >  len(data_book.sheet_names): xStart = 0
-            elif info_selection.lower() in map(lambda x:x.lower(), data_book.sheet_names):
+                if xStart > len(data_book.sheet_names): xStart = 0
+            elif info_selection.lower() in map(lambda x: x.lower(), data_book.sheet_names):
                 info_selection = [var.lower() for var in dList].index(info_selection)
-                sheet_select = add_to_info_list(sheet_select, 
-                                              data_book.sheet_names,
-                                              info_selection)
+                sheet_select = add_to_info_list(sheet_select,
+                                                data_book.sheet_names,
+                                                info_selection)
                 continue_selection = False
-            elif info_selection in map(str, range(1,iList_size + 1)):
-                sheet_select = add_to_info_list(sheet_select, 
-                                              dList, 
-                                              int(info_selection) - 1)
+            elif info_selection in map(str, range(1, iList_size + 1)):
+                sheet_select = add_to_info_list(sheet_select,
+                                                dList,
+                                                int(info_selection) - 1)
                 continue_selection = False
             else:
                 print("\n!!!!! Selection was not recognized !!!!!")
                 print("Options available at this stage are:")
                 print("Number without period or column name")
                 print("0 or More")
-            
+        else:
+            sheet_select = data_book.sheet_names
+            continue_selection = False
+
+    try:
         selected_sheet = sheet_select[0]
-        data_rows = data_book.parse(sheet_name = selected_sheet)
-        
-    except PermissionError:
-        print(os.path.basename(selected_file) + ' is not accessible. Likely in use by another application.')
-        sys.exit(1)
-    except AssertionError:
-        print('No rider list was selected. Exiting')
-        sys.exit(0)
+    except KeyError:
+        print("\n!!!!! A Selection was not found !!!!!")
+        print(f"Received: {sheet_select}")
+
+    data_rows = data_book.parse(sheet_name=selected_sheet)
 
     return selected_file, selected_sheet, data_rows
 
