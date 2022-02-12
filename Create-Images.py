@@ -142,6 +142,7 @@ def selection_evaluation(prime_inputs, extend_inputs, user_input,
         if user_input in ["more", '0']:
             x_pos += list_step
             if x_pos >  list_max: x_pos = 0
+            valid_input = False
         elif user_input in ['done', '99']:
             if len(output_list) >= min_selections:
                 continue_requests = False
@@ -224,7 +225,7 @@ def data_file(def_title):
     t.start()
     while t.is_alive():
         load_indicator = spinner(load_indicator)
-        time.sleep(1)
+        time.sleep(0.1)
 
     data_book = my_queue.get()
     if data_book == 'PermissionError':
@@ -326,6 +327,65 @@ def add_to_info_list(current_list, available_list, add_index:int):
     current_list.append(add_item)
         
     return current_list
+
+
+def image_generation(info, text_top, text_bottom):
+    group = 'white'
+    text = text_top + '\n' + text_bottom
+    
+    # Create layers
+    layer_qr = qr_create(info)
+    layer_frame = frame_create(group)
+    
+    # Stack layers
+    rider_image = layer_frame
+    rider_image.paste(
+        layer_qr,
+        (qr_buffer, qr_buffer),
+        mask=None
+    )
+    rider_image.paste(
+        layer_logo,
+        (round((frame_w - logo_w) / 2),
+         round((qr_h - logo_h) / 2) + qr_buffer),
+        mask=None
+    )
+    # Add rider name text
+    start_size = 240
+    font_size = start_size
+    font = set_font(font_size)
+
+    if len(text_top) > len(text_bottom):
+        name_limit = text_top
+    else:
+        name_limit = text_bottom
+
+    # Make sure the name fits
+    while True:
+        font_size = font_size - 20
+        font = set_font(font_size)
+        text_vert_pos = frame_h / 2 + qr_h / 2 - qr_buffer / 2  # was + qr_buffer
+
+        if (font.getsize(name_limit)[0] < qr_w) or (font.size <= 0):
+            break
+
+    name_color = 'black'
+
+    rider_label = ImageDraw.Draw(rider_image)
+    rider_label.text(
+        (round(frame_w / 2),
+         text_vert_pos),
+        text,
+        fill=name_color,
+        anchor='mm',
+        align='center',
+        font=font
+    )
+
+    # Outputs
+    rider_image = rider_image.resize((300, 373))
+
+    return rider_image
 
 
 # Run the program
@@ -453,9 +513,9 @@ if __name__ == '__main__':
                  '*', 'clear list']]
     while continue_selection and not valid_filter:
         filter_list = []
+        xStart = 0
         # Select a column to filter
         while not valid_filter:
-            xStart = 0
             filter_info = [list(filter_dict.keys()), list(filter_dict.values())]
             for x in range(len(filter_info[0])):
                 try:
@@ -506,9 +566,9 @@ if __name__ == '__main__':
         # filter_info[0][-1] = riders.columns[list(info_names).index(filter_info[0][-1])]
         # Now that the column is valid, select a valid value within that column
         valid_filter = False
+        xStart = 0
         while not valid_filter or continue_selection:
             valid_filter = False
-            xStart = 0
             print(f'Select a value to filter for {filter_append}:')
             
             try: 
@@ -569,75 +629,33 @@ if __name__ == '__main__':
     # Check there is data remaining, if not return to filter selection
 
     # Ask for first text row (suggest first name)
+    first_line = ''
     
     # Ask for second text row (suggest last name)
+    second_line = ''
     
-    # Present a sample image for approval    
+    # Present a sample image for approval
+    delim = '\t'
+    # ToDO: Apply the users code
+    rider_code = str(int(riders['RegistrantId'][0]))
+                # delim.join([str(var) for var in rider_info])
+    first_text = riders[first_line][0].title() 
+    second_text = riders[second_line][0].title()
+    rider_qr = image_generation(rider_code, first_text, second_text)
+    rider_qr.show()
     
     # ToDo: make range of riders selectable
     for x in range(len(riders)):
-        if riders['Role'][x] == 'Rider': #Filters
-            # ToDo: make data fields selectable
-            rider_code = delim.join([str(var) for var in rider_info])
-            rider_file = riders['Lastname'][x].title() + ' ' + riders['Firstname'][x].title()
-            rider_name = riders['Firstname'][x].title() + '\n' + riders['Lastname'][x].title()
-            rider_group = 'white'
+        rider_code = str(int(riders['RegistrantId'][x]))  # + '\t' + \
+                        # riders['Firstname'][x] + '\t' + riders['Lastname'][x]
+        rider_file = riders[second_line][x].title() + ' ' + riders[first_line][x].title()
+        first_text = riders[first_line][0].title() 
+        second_text = riders[second_line][0].title()
+        
+        rider_qr = image_generation(rider_code, first_text, second_text)
+        
+        # ToDo: make the code type selectable
 
-            # ToDo: make the code type selectable
-
-            # Create layers
-            layer_qr = qr_create(rider_code)
-            layer_frame = frame_create(rider_group)
-
-            # Stack layers
-            rider_qr = layer_frame
-            rider_qr.paste(
-                layer_qr,
-                (qr_buffer,
-                 qr_buffer),
-                mask=None
-            )
-            rider_qr.paste(
-                layer_logo,
-                (round((frame_w - logo_w) / 2),
-                 round((qr_h - logo_h) / 2) + qr_buffer),
-                mask=None
-            )
-
-            # Add rider name text
-            start_size = 240
-            font_size = start_size
-            font = set_font(font_size)
-
-            if len(riders['Firstname'][x]) > len(riders['Lastname'][x]):
-                name_limit = riders['Firstname'][x]
-            else:
-                name_limit = riders['Lastname'][x]
-
-            # Make sure the name fits
-            while True:
-                font_size = font_size - 20
-                font = set_font(font_size)
-                text_vert_pos = frame_h / 2 + qr_h / 2 - qr_buffer / 2  # was + qr_buffer
-
-                if (font.getsize(name_limit)[0] < qr_w) or (font.size <= 0):
-                    break
-
-            name_color = 'black'
-
-            rider_label = ImageDraw.Draw(rider_qr)
-            rider_label.text(
-                (round(frame_w / 2),
-                 text_vert_pos),
-                rider_name,
-                fill=name_color,
-                anchor='mm',
-                align='center',
-                font=font
-            )
-
-            # Outputs
-            rider_qr = rider_qr.resize((300, 373))
-            rider_qr.save(qrPath + '/' + rider_file + '.png')
+        rider_qr.save(qrPath + '/' + rider_file + '.png')
 
 # rider_qr.show()
