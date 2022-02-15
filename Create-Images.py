@@ -626,10 +626,46 @@ if __name__ == '__main__':
     query = query + "'"
     riders = riders.query(eval(query))
 
-    # Check there is data remaining, if not return to filter selection
+    # ToDo: Check there is data remaining, if not return to filter selection
 
     # Ask for first text row (suggest first name)
-    first_line = ''
+    selected_lines = ['','']
+    place_name = ['top', 'bottom']
+    xtraList = [["     0. Show more columns [More]",
+                 "     99. No text [Done]"],
+                 ['0', 'more',
+                  '99', 'done']]
+    for x in range(2):
+        xStart = 0
+        iList_size = 9
+        continue_selection = True
+        valid_column = False
+        while continue_selection and not valid_column:
+            print(f"Select the {place_name[x]} line of text")
+            print("Column to use:")
+            dList = display_options(riders.columns,
+                                    xtraList[0],
+                                    xStart,
+                                    iList_size)
+            
+            info_selection = input(f"Choice (1:{min(len(dList), iList_size)}): ")
+            
+            info_ints = list(map(str, range(1,iList_size + 1)))
+            info_names = list(map(lambda x:x.lower(), riders.columns))
+                
+            text_select, xStart, continue_selection, valid_column = selection_evaluation([info_ints,info_names],
+                                                                                         xtraList[1],
+                                                                                         info_selection,
+                                                                                         list(selected_lines[x]),
+                                                                                         iList_size,
+                                                                                         riders.columns.size,
+                                                                                         xStart,
+                                                                                         0)
+            time.sleep(0.01)
+        if valid_column:
+            selected_lines[x] = riders.columns[list(info_names).index(text_select[0])]    
+        else:
+            selected_lines[x] = ''
     
     # Ask for second text row (suggest last name)
     second_line = ''
@@ -639,8 +675,15 @@ if __name__ == '__main__':
     # ToDO: Apply the users code
     rider_code = str(int(riders['RegistrantId'][0]))
                 # delim.join([str(var) for var in rider_info])
-    first_text = riders[first_line][0].title() 
-    second_text = riders[second_line][0].title()
+    try:
+        first_text = riders[selected_lines[0]][0].title() 
+    except KeyError:
+        first_text = ''
+    try:
+        second_text = riders[selected_lines[1]][0].title()
+    except KeyError:
+        second_text = ''
+        
     rider_qr = image_generation(rider_code, first_text, second_text)
     rider_qr.show()
     
