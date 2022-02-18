@@ -196,7 +196,7 @@ def load_excel(declared_file):
     except PermissionError:
         print(os.path.basename(declared_file) + ' is not accessible. Likely in use by another application.')
         book = 'PermissionError'
-    except AssertionError:
+    except (AssertionError, FileNotFoundError):
         print('No rider list was selected. Exiting')
         book = 'AssertionError'
     return book
@@ -218,16 +218,21 @@ def data_file(def_title):
         title=def_title,
         filetypes=[("Excel file", "*.xlsx *.xls")]
     )
-
-    load_indicator = "Loading.."
-
-    t = threading.Thread(target=load_excel, args=(selected_file, ))
-    t.start()
-    while t.is_alive():
-        load_indicator = spinner(load_indicator)
-        time.sleep(0.1)
-
-    data_book = my_queue.get()
+    
+    if len(selected_file) > 0:
+        load_indicator = "Loading.."
+    
+        t = threading.Thread(target=load_excel, args=(selected_file, ))
+        t.start()
+        while t.is_alive():
+            load_indicator = spinner(load_indicator)
+            time.sleep(0.1)
+    
+        data_book = my_queue.get()
+    else:
+        print('No rider list was selected. Exiting')
+        sys.exit(0)
+        
     if data_book == 'PermissionError':
         sys.exit(1)
     elif data_book == 'AssertionError':
@@ -336,6 +341,16 @@ def image_generation(info, text_top, text_bottom):
     # Create layers
     layer_qr = qr_create(info)
     layer_frame = frame_create(group)
+    frame_w, frame_h = layer_frame.size
+    
+    # Resize QR and logo per border definition
+    layer_qr = qr_create(group)
+    # Option for adding a logo to the center of the qr code
+    layer_logo = handle_logo(os.path.dirname(rider_file), layer_qr)
+    # % Dimensions
+    logo_w, logo_h = layer_logo.size
+    qr_w, qr_h = layer_qr.size
+    qr_buffer = round((frame_w - qr_w) / 2)
     
     # Stack layers
     rider_image = layer_frame
@@ -407,14 +422,6 @@ if __name__ == '__main__':
     print("8) Images are created")
     print("9) Execute the create-document.py script")
     
-    # Prepare
-    # % Layers
-    layer_frame = frame_create('white')
-    # layer_logo = layer_logo.resize((399, 399))
-
-    # % Dimensions
-    frame_w, frame_h = layer_frame.size
-
     # ToDo: resolved error in PIL Image when from tkinter import * and Tk() is used
     # root = Tk()  # pointing root to Tk() to use it as Tk() in program.
     # root.withdraw()  # Hides small tkinter window.
@@ -430,15 +437,6 @@ if __name__ == '__main__':
     qrPath = temp_img_path(os.path.dirname(rider_file))
     print(f"Using {qrPath} as the temporary image folder")
 
-    # Resize QR and logo per border definition
-    layer_qr = qr_create('')
-    # Option for adding a logo to the center of the qr code
-    layer_logo = handle_logo(os.path.dirname(rider_file), layer_qr)
-    # % Dimensions
-    logo_w, logo_h = layer_logo.size
-    qr_w, qr_h = layer_qr.size
-    qr_buffer = round((frame_w - qr_w) / 2)
-    
     print("\nWhat information should be in the QR code, in order?")
     rider_info = []
     iList_size = 9
@@ -668,7 +666,7 @@ if __name__ == '__main__':
             selected_lines[x] = ''
     
     # Ask for second text row (suggest last name)
-    second_line = ''
+    #second_line = ''
     
     # Present a sample image for approval
     delim = '\t'
@@ -687,13 +685,15 @@ if __name__ == '__main__':
     rider_qr = image_generation(rider_code, first_text, second_text)
     rider_qr.show()
     
+    input('Pause')
+    
     # ToDo: make range of riders selectable
     for x in range(len(riders)):
         rider_code = str(int(riders['RegistrantId'][x]))  # + '\t' + \
                         # riders['Firstname'][x] + '\t' + riders['Lastname'][x]
-        rider_file = riders[second_line][x].title() + ' ' + riders[first_line][x].title()
-        first_text = riders[first_line][0].title() 
-        second_text = riders[second_line][0].title()
+        rider_file = riders[selected_lines[1]][x].title() + ' ' + riders[selected_lines[0]][x].title()
+        first_text = riders[selected_lines[0]][x].title() 
+        second_text = riders[selected_lines[1]][x].title()
         
         rider_qr = image_generation(rider_code, first_text, second_text)
         
