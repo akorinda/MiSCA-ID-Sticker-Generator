@@ -81,31 +81,31 @@ def set_font(default_font_size):
 
 
 def handle_logo(int_path, base_img):
-    valid_selection:bool = False
-    print('\nWith QR codes you can add a logo to the center.')
-    print('A downside is the qr code will have less error handling.')
+    # valid_selection:bool = False
+    # print('\nWith QR codes you can add a logo to the center.')
+    # print('A downside is the qr code will have less error handling.')
     
-    while not valid_selection:
-        confirm_desire = input('Will you like to add a logo? [Y,N]: ')
+    # while not valid_selection:
+    #     confirm_desire = input('Will you like to add a logo? [Y,N]: ')
         
-        if confirm_desire.lower() in ['y', 'yes']:
-            logo_file = filedialog.askopenfilename(
-                title='Open Center Logo',
-                filetypes=[("Image file", "*.jpg *.jpeg *.png")],
-                initialdir=int_path
-            )
-            valid_selection = True
-        elif confirm_desire.lower() in ['n', 'no']:
-            logo_file = ''
-            valid_selection = True
+    #     if confirm_desire.lower() in ['y', 'yes']:
+    #         logo_file = filedialog.askopenfilename(
+    #             title='Open Center Logo',
+    #             filetypes=[("Image file", "*.jpg *.jpeg *.png")],
+    #             initialdir=int_path
+    #         )
+    #         valid_selection = True
+    #     elif confirm_desire.lower() in ['n', 'no']:
+    #         logo_file = ''
+    #         valid_selection = True
 
-    try:
-        logo_img = Image.open(logo_file, mode='r')
-        logo_dim = round((0.07 * base_img.size[0] * base_img.size[1]) ** 0.5)
-        logo_img = logo_img.resize((logo_dim, logo_dim))
-    except AttributeError:
-        logo_n = 1
-        logo_img = Image.new('RGB', (logo_n, logo_n))
+    # try:
+    #     logo_img = Image.open(logo_file, mode='r')
+    #     logo_dim = round((0.07 * base_img.size[0] * base_img.size[1]) ** 0.5)
+    #     logo_img = logo_img.resize((logo_dim, logo_dim))
+    # except AttributeError:
+    logo_n = 1
+    logo_img = Image.new('RGB', (logo_n, logo_n))
 
     return logo_img
 
