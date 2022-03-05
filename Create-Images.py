@@ -431,6 +431,9 @@ if __name__ == '__main__':
     print("\n\nProvide the file with the rider list. An Excel formant, *.xls or *.xlsx is expected")
     rider_file, rider_sheet, riders = data_file('Open Rider List')
     print(f'Using "{os.path.basename(rider_file)}",\n  Sheet "{rider_sheet}" for rider information')
+    # Drop columns without any data
+    riders = riders.dropna(axis='columns',
+                           how='all')
     
     # Select where image files get saved
     print("\nProvide a folder where QR images can be temporarily stored")
@@ -479,10 +482,12 @@ if __name__ == '__main__':
             rider_info = add_to_info_list(rider_info, 
                                           riders.columns,
                                           info_selection)
+            continue_selection = False
         elif info_selection in map(str, range(1,iList_size + 1)):
             rider_info = add_to_info_list(rider_info, 
                                           dList, 
                                           int(info_selection) - 1)
+            continue_selection = False
         else:
             print("\n!!!!! Selection was not recognized !!!!!")
             print("Options available at this stage are:")
@@ -492,6 +497,10 @@ if __name__ == '__main__':
             print("~ or Backspace")
             print("* or Clear list")
     
+    # Remove rows without data in key column
+    riders = riders.dropna(subset=rider_info)
+    # Drop all rows where the key column is the only coulmn with data
+    riders = riders.dropna(thresh=2)
     
     print('\nWhat if any filters should be applied?')
     filter_dict = {}
@@ -603,26 +612,30 @@ if __name__ == '__main__':
                 
     # Apply the filter
     # Brute force method
-    filter_info = [list(filter_dict.keys()), list(filter_dict.values())]
-    query = ''
-    delim_or = ' or '
-    delim_and = ' and '
-    delim_eval = ' == '
-    for x in range(len(filter_info[0])):
-        if x == 0:
-            query = "'"
-        else:
-            query = query + delim_and
-        for y in range(len(filter_info[1][x])):
-            if y == 0:
-                delim_or = '('
+    try:
+        filter_info = [list(filter_dict.keys()), list(filter_dict.values())]
+        query = ''
+        delim_or = ' or '
+        delim_and = ' and '
+        delim_eval = ' == '
+        for x in range(len(filter_info[0])):
+            if x == 0:
+                query = "'"
             else:
-                delim_or = ' or '
-            query = query + delim_or + '`' + filter_info[0][x] + '`' + delim_eval + '"' + filter_info[1][x][y] + '"'
-            if y == len(filter_info[1][x]) - 1:
-                query = query + ')'
-    query = query + "'"
-    riders = riders.query(eval(query))
+                query = query + delim_and
+            for y in range(len(filter_info[1][x])):
+                if y == 0:
+                    delim_or = '('
+                else:
+                    delim_or = ' or '
+                query = query + delim_or + '`' + filter_info[0][x] + '`' + delim_eval + '"' + filter_info[1][x][y] + '"'
+                if y == len(filter_info[1][x]) - 1:
+                    query = query + ')'
+        query = query + "'"
+        riders = riders.query(eval(query))
+    except SyntaxError:
+        print('No filter was recognized, continuing')
+        riders = riders # Apply no filter
 
     # ToDo: Check there is data remaining, if not return to filter selection
 
@@ -671,7 +684,7 @@ if __name__ == '__main__':
     # Present a sample image for approval
     delim = '\t'
     # ToDO: Apply the users code
-    rider_code = str(int(riders['RegistrantId'][0]))
+    rider_code = str(riders[rider_info[0]][0]) #eval('["' + '","'.join([str(var) for var in rider_info]) + '"]')
                 # delim.join([str(var) for var in rider_info])
     try:
         first_text = riders[selected_lines[0]][0].title() 
@@ -689,8 +702,7 @@ if __name__ == '__main__':
     
     # ToDo: make range of riders selectable
     for x in range(len(riders)):
-        rider_code = str(int(riders['RegistrantId'][x]))  # + '\t' + \
-                        # riders['Firstname'][x] + '\t' + riders['Lastname'][x]
+        rider_code = str(riders[rider_info[0]][x]) #eval('["' + '","'.join([str(var) for var in rider_info]) + '"]')
         rider_file = riders[selected_lines[1]][x].title() + ' ' + riders[selected_lines[0]][x].title()
         first_text = riders[selected_lines[0]][x].title() 
         second_text = riders[selected_lines[1]][x].title()
