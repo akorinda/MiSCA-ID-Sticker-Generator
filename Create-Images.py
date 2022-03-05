@@ -482,12 +482,10 @@ if __name__ == '__main__':
             rider_info = add_to_info_list(rider_info, 
                                           riders.columns,
                                           info_selection)
-            continue_selection = False
         elif info_selection in map(str, range(1,iList_size + 1)):
             rider_info = add_to_info_list(rider_info, 
                                           dList, 
                                           int(info_selection) - 1)
-            continue_selection = False
         else:
             print("\n!!!!! Selection was not recognized !!!!!")
             print("Options available at this stage are:")
@@ -683,9 +681,9 @@ if __name__ == '__main__':
     
     # Present a sample image for approval
     delim = '\t'
+    riders_codes = riders[riders.columns.intersection(rider_info)].values.tolist()
     # ToDO: Apply the users code
-    rider_code = str(riders[rider_info[0]][0]) #eval('["' + '","'.join([str(var) for var in rider_info]) + '"]')
-                # delim.join([str(var) for var in rider_info])
+    rider_code = delim.join(str(var) for var in riders_codes[0])
     try:
         first_text = riders[selected_lines[0]][0].title() 
     except KeyError:
@@ -702,7 +700,7 @@ if __name__ == '__main__':
     
     # ToDo: make range of riders selectable
     for x in range(len(riders)):
-        rider_code = str(riders[rider_info[0]][x]) #eval('["' + '","'.join([str(var) for var in rider_info]) + '"]')
+        rider_code = delim.join(str(var) for var in riders_codes[x])
         rider_file = riders[selected_lines[1]][x].title() + ' ' + riders[selected_lines[0]][x].title()
         first_text = riders[selected_lines[0]][x].title() 
         second_text = riders[selected_lines[1]][x].title()
