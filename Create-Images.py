@@ -298,10 +298,10 @@ def data_file(def_title):
     return selected_file, selected_sheet, data_rows
 
 
-def temp_img_path(int_path):
+def img_document_path(int_path):
     try:
         img_path = filedialog.askdirectory(
-            title='QR Images Save Location',
+            title='QR Document Save Location',
             initialdir=int_path
         )
 
@@ -434,11 +434,6 @@ if __name__ == '__main__':
     # Drop columns without any data
     riders = riders.dropna(axis='columns',
                            how='all')
-    
-    # Select where image files get saved
-    print("\nProvide a folder where QR images can be temporarily stored")
-    qrPath = temp_img_path(os.path.dirname(rider_file))
-    print(f"Using {qrPath} as the temporary image folder")
 
     print("\nWhat information should be in the QR code, in order?")
     rider_info = []
@@ -631,6 +626,7 @@ if __name__ == '__main__':
                     query = query + ')'
         query = query + "'"
         riders = riders.query(eval(query))
+        riders = riders.reset_index(drop=True)
     except SyntaxError:
         print('No filter was recognized, continuing')
         riders = riders # Apply no filter
@@ -699,6 +695,7 @@ if __name__ == '__main__':
     input('Pause')
     
     # ToDo: make range of riders selectable
+    rider_code_dict = {}
     for x in range(len(riders)):
         rider_code = delim.join(str(var) for var in riders_codes[x])
         rider_file = riders[selected_lines[1]][x].title() + ' ' + riders[selected_lines[0]][x].title()
@@ -709,6 +706,18 @@ if __name__ == '__main__':
         
         # ToDo: make the code type selectable
 
-        rider_qr.save(qrPath + '/' + rider_file + '.png')
+        # ToDo: handle people with the same name
+
+        rider_code_dict.update({rider_file: rider_qr})
 
 # rider_qr.show()
+
+for i in sorted (rider_code_dict.keys()) :
+     print(i, end = " ")
+
+# Select where final documents gets saved
+print("\nProvide a folder where document can be saved")
+qrPath = img_document_path(os.path.dirname(rider_file))
+print(f"Using {qrPath} as the document output folder")
+
+# ToDo: request the number of copies of the code
