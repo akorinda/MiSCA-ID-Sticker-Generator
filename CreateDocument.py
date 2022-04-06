@@ -43,6 +43,46 @@ def qr_doc_format(document_to_format):
     return document_to_format
 
 
+def code_doc_from_dict(code_dict, output_document, *, qty_copies=1, input_document=''):
+    if len(input_document) > 0:
+        try:
+            document = Document(input_document)
+        except PermissionError:
+            exception_file_open(input_document)
+    else:
+        try:
+            document = Document()
+            document.add_paragraph()
+            document.add_section()
+            #document.save(output_document)
+            #document = Document(output_document)
+        except PermissionError:
+            exception_file_open(output_document)
+
+    document = qr_doc_format(document)
+    paragraph = document.paragraphs[0]
+    paragraph = qr_line_format(paragraph)
+
+    qr_count = 0
+    paragraph.add_run('\t')
+    for key_i in sorted (code_dict.keys()):
+        for x in range(1, qty_copies + 1):
+            run = paragraph.add_run()
+            run.add_picture(code_dict.get(key_i), height=Inches(1.0))
+            qr_count += 1
+            if qr_count % 6 == 0:
+                paragraph = document.add_paragraph()
+                paragraph = qr_line_format(paragraph)
+                paragraph.add_run('\t')
+            else:
+                paragraph.add_run('\t')
+
+    try:
+        document.save(output_document)
+    except PermissionError:
+        exception_file_open(output_document)
+
+
 # Main function of this script to compile all png files in the given directory
 def qr_doc_create(input_document, output_document, image_path, qty_copies):
     try:
