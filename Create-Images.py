@@ -24,6 +24,8 @@ import threading, queue
 from PIL import Image, ImageDraw, ImageFont
 from tkinter import filedialog
 
+from CreateDocument import code_doc_from_dict
+
 
 # Constants
 
@@ -298,24 +300,29 @@ def data_file(def_title):
     return selected_file, selected_sheet, data_rows
 
 
-def img_document_path(int_path):
+def code_document_request(int_path):
     try:
-        img_path = filedialog.askdirectory(
+        doc_name = filedialog.asksaveasfilename(
             title='QR Document Save Location',
-            initialdir=int_path
+            initialdir=int_path,
+            defaultextension='*.docx',
+            filetypes=[('Word file', '*.docx')],
+            confirmoverwrite=True
         )
 
-        if img_path == '':
+        if doc_name == '':
             print('No output path was selected. Exiting')
             sys.exit(0)
     except FileNotFoundError:
         print('The system cannot find the path specified. Exiting')
         sys.exit(0)
-    if not os.path.exists(img_path):
+
+    doc_path = os.path.dirname(doc_name)
+    if not os.path.exists(doc_path):
         try:
-            os.makedirs(img_path)
+            os.makedirs(doc_path)
         except PermissionError:
-            print(img_path + ' is not accessible.')
+            print(doc_path + ' is not accessible.')
             sys.exit(1)
         except AssertionError:
             print('No output path was selected. Exiting')
@@ -324,7 +331,7 @@ def img_document_path(int_path):
             print('The system cannot find the path specified. Exiting')
             sys.exit(0)
 
-    return img_path
+    return doc_name
 
 
 def add_to_info_list(current_list, available_list, add_index:int):
@@ -364,8 +371,8 @@ def image_generation(info, text_top, text_bottom):
         (round((frame_w - logo_w) / 2),
          round((qr_h - logo_h) / 2) + qr_buffer),
         mask=None
-    )
     # Add rider name text
+    )
     start_size = 240
     font_size = start_size
     font = set_font(font_size)
@@ -708,16 +715,30 @@ if __name__ == '__main__':
 
         # ToDo: handle people with the same name
 
+        # ToDo: show a progress meter
+
         rider_code_dict.update({rider_file: rider_qr})
 
-# rider_qr.show()
+    # Select where final documents gets saved
+    print("\nProvide a folder where document can be saved")
+    code_doc = code_document_request(os.path.dirname(os.path.realpath(__file__)))
+    print(f"Using {code_doc} as the output document")
 
-for i in sorted (rider_code_dict.keys()) :
-     print(i, end = " ")
+    # ToDo: request the number of copies of the code
+    correct_format = False
+    while not correct_format:
+        try:
+            code_qty = input('\nHow many copies should be made for each participant?: ')
+            if len(code_qty) > 0:
+                code_qty = int(code_qty)
+                correct_format = True
+                if code_qty <= 0:
+                    print('\nNo codes printed based on requested quantity.')
+                    sys.exit(0)
+        except ValueError:
+            print("\nEnter an integer value.")
+    print('\n')
 
-# Select where final documents gets saved
-print("\nProvide a folder where document can be saved")
-qrPath = img_document_path(os.path.dirname(rider_file))
-print(f"Using {qrPath} as the document output folder")
-
-# ToDo: request the number of copies of the code
+    code_doc_from_dict(rider_code_dict, code_doc,
+                       qty_copies=code_qty)
+    # ToDo: show a progress meter
