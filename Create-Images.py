@@ -15,7 +15,7 @@ __status__ = "Prototype"
 
 # Imports
 import sys
-import os
+import subprocess, os, platform
 import time
 
 import pandas
@@ -438,6 +438,7 @@ def qr_doc_format(document_to_format):
 
 
 def code_doc_from_dict(code_dict, output_document, *, qty_copies=1, input_document=''):
+    global document
     if len(input_document) > 0:
         try:
             document = Document(input_document)
@@ -476,6 +477,11 @@ def code_doc_from_dict(code_dict, output_document, *, qty_copies=1, input_docume
         document.save(output_document)
     except PermissionError:
         exception_file_open(output_document)
+
+
+def exception_file_open(requested_document):
+    print(requested_document + ' is not accessible. Likely in use by another application.')
+    sys.exit(1)
 
 
 # Run the program
@@ -746,14 +752,11 @@ if __name__ == '__main__':
             selected_lines[x] = riders.columns[list(info_names).index(text_select[0])]    
         else:
             selected_lines[x] = ''
-    
-    # Ask for second text row (suggest last name)
-    #second_line = ''
-    
+
     # Present a sample image for approval
     delim = '\t'
     riders_codes = riders[riders.columns.intersection(rider_info)].values.tolist()
-    # ToDO: Apply the users code
+
     rider_code = delim.join(str(var) for var in riders_codes[0])
     try:
         first_text = riders[selected_lines[0]][0].title() 
@@ -768,31 +771,13 @@ if __name__ == '__main__':
     rider_qr.show()
     
     input('Pause')
-    
-    # ToDo: make range of riders selectable
-    rider_code_dict = {}
-    for x in range(len(riders)):
-        rider_code = delim.join(str(var) for var in riders_codes[x])
-        rider_file = riders[selected_lines[1]][x].title() + ' ' + riders[selected_lines[0]][x].title()
-        first_text = riders[selected_lines[0]][x].title() 
-        second_text = riders[selected_lines[1]][x].title()
-        
-        rider_qr = image_generation(rider_code, first_text, second_text)
-        
-        # ToDo: make the code type selectable
-
-        # ToDo: handle people with the same name
-
-        # ToDo: show a progress meter
-
-        rider_code_dict.update({rider_file: rider_qr})
 
     # Select where final documents gets saved
-    print("\nProvide a folder where document can be saved")
+    print("\nCreate a document name for the output codes.")
     code_doc = code_document_request(os.path.dirname(os.path.realpath(__file__)))
     print(f"Using {code_doc} as the output document")
 
-    # ToDo: request the number of copies of the code
+    # How many copies of each code should be put in the document?
     correct_format = False
     while not correct_format:
         try:
@@ -807,6 +792,69 @@ if __name__ == '__main__':
             print("\nEnter an integer value.")
     print('\n')
 
-    code_doc_from_dict(rider_code_dict, code_doc,
-                       qty_copies=code_qty)
-    # ToDo: show a progress meter
+    try:
+        document = Document()
+        document.add_paragraph()
+        document.add_section()
+        # document.save(output_document)
+        # document = Document(output_document)
+    except PermissionError:
+        exception_file_open(code_doc)
+
+    document = qr_doc_format(document)
+    paragraph = document.paragraphs[0]
+    paragraph = qr_line_format(paragraph)
+
+    qr_count = 0
+    paragraph.add_run('\t')
+
+    # ToDo: make range of riders selectable
+    # ToDo: make the code type selectable
+    # ToDo: handle people with the same name
+
+    rider_code_dict = {}
+    for idx_rider in range(len(riders)):
+        rider_code = delim.join(str(var) for var in riders_codes[idx_rider])
+        try:
+            first_text = riders[selected_lines[0]][idx_rider].title()
+        except KeyError:
+            first_text = ''
+        try:
+            second_text = riders[selected_lines[1]][idx_rider].title()
+        except KeyError:
+            first_text = ''
+
+        rider_file = second_text + ' ' + first_text + '.png'
+        
+        rider_qr = image_generation(rider_code, first_text, second_text)
+        rider_qr.save(rider_file)
+
+        # ToDo: show a progress meter
+        for copy_number in range(1, code_qty + 1):
+            run = paragraph.add_run()
+            run.add_picture(rider_file, height=Inches(1.0))
+            if idx_rider+1 % 6 == 0:
+                paragraph = document.add_paragraph()
+                paragraph = qr_line_format(paragraph)
+                paragraph.add_run('\t')
+            else:
+                paragraph.add_run('\t')
+
+        try:
+            os.remove(rider_file)
+        except OSError:
+            pass
+
+    try:
+        # Save what has been created as specified
+        document.save(code_doc)
+
+        # Open the created document
+        if platform.system() == 'Darwin':  # macOS
+            subprocess.call(('open', code_doc))
+        elif platform.system() == 'Windows':  # Windows
+            os.startfile(code_doc)
+        else:  # linux variants
+            subprocess.call(('xdg-open', code_doc))
+    except PermissionError:
+        exception_file_open(code_doc)
