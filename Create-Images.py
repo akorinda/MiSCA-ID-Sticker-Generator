@@ -753,29 +753,11 @@ if __name__ == '__main__':
         else:
             selected_lines[x] = ''
 
-    # Present a sample image for approval
-    delim = '\t'
-    riders_codes = riders[riders.columns.intersection(rider_info)].values.tolist()
-
-    rider_code = delim.join(str(var) for var in riders_codes[0])
-    try:
-        first_text = riders[selected_lines[0]][0].title() 
-    except KeyError:
-        first_text = ''
-    try:
-        second_text = riders[selected_lines[1]][0].title()
-    except KeyError:
-        second_text = ''
-        
-    rider_qr = image_generation(rider_code, first_text, second_text)
-    rider_qr.show()
-    
-    input('Pause')
-
     # Select where final documents gets saved
     print("\nCreate a document name for the output codes.")
     code_doc = code_document_request(os.path.dirname(os.path.realpath(__file__)))
     print(f"Using {code_doc} as the output document")
+    code_path = os.path.dirname(code_doc)
 
     # How many copies of each code should be put in the document?
     correct_format = False
@@ -812,7 +794,9 @@ if __name__ == '__main__':
     # ToDo: make the code type selectable
     # ToDo: handle people with the same name
 
-    rider_code_dict = {}
+    delim = '\t'
+    riders_codes = riders[riders.columns.intersection(rider_info)].values.tolist()
+    rider_dict = {}
     for idx_rider in range(len(riders)):
         rider_code = delim.join(str(var) for var in riders_codes[idx_rider])
         try:
@@ -822,11 +806,17 @@ if __name__ == '__main__':
         try:
             second_text = riders[selected_lines[1]][idx_rider].title()
         except KeyError:
-            first_text = ''
+            second_text = ''
+        rider_text = second_text + ' ' + first_text
+        rider_dict.update({rider_text: [rider_code, first_text, second_text]})
 
-        rider_file = second_text + ' ' + first_text + '.png'
+    idx_rider = 0
+    for key_rider in sorted (rider_dict.keys()):
+        rider_file = os.path.join(code_path, key_rider + '.png')
         
-        rider_qr = image_generation(rider_code, first_text, second_text)
+        rider_qr = image_generation(rider_dict.get(key_rider)[0],
+                                    rider_dict.get(key_rider)[1],
+                                    rider_dict.get(key_rider)[2])
         rider_qr.save(rider_file)
 
         # ToDo: show a progress meter
@@ -858,3 +848,5 @@ if __name__ == '__main__':
             subprocess.call(('xdg-open', code_doc))
     except PermissionError:
         exception_file_open(code_doc)
+
+    input('Process complete. Press enter to close the program or close the window as normal.')
