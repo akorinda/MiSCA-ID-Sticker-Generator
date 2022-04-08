@@ -437,48 +437,6 @@ def qr_doc_format(document_to_format):
     return document_to_format
 
 
-def code_doc_from_dict(code_dict, output_document, *, qty_copies=1, input_document=''):
-    global document
-    if len(input_document) > 0:
-        try:
-            document = Document(input_document)
-        except PermissionError:
-            exception_file_open(input_document)
-    else:
-        try:
-            document = Document()
-            document.add_paragraph()
-            document.add_section()
-            #document.save(output_document)
-            #document = Document(output_document)
-        except PermissionError:
-            exception_file_open(output_document)
-
-    document = qr_doc_format(document)
-    paragraph = document.paragraphs[0]
-    paragraph = qr_line_format(paragraph)
-
-    qr_count = 0
-    paragraph.add_run('\t')
-    for key_i in sorted (code_dict.keys()):
-        for x in range(1, qty_copies + 1):
-            run = paragraph.add_run()
-            keyed_picture = code_dict.get(key_i)
-            run.add_picture(keyed_picture, height=Inches(1.0))
-            qr_count += 1
-            if qr_count % 6 == 0:
-                paragraph = document.add_paragraph()
-                paragraph = qr_line_format(paragraph)
-                paragraph.add_run('\t')
-            else:
-                paragraph.add_run('\t')
-
-    try:
-        document.save(output_document)
-    except PermissionError:
-        exception_file_open(output_document)
-
-
 def exception_file_open(requested_document):
     print(requested_document + ' is not accessible. Likely in use by another application.')
     sys.exit(1)
@@ -486,6 +444,10 @@ def exception_file_open(requested_document):
 
 # Run the program
 if __name__ == '__main__':
+    divider = '--------------------------------------------------------------------------'
+    clear_command = "cls" if platform.system() == "Windows" else "clear"
+    os.system(clear_command)
+
     print("\n----------- Welcome to Making QR Code Rider Sheets -----------")
     print("- 'X' to return not implemented")
     print("- 'H' for help text not implemented")
@@ -495,13 +457,14 @@ if __name__ == '__main__':
                                'q', 'quit']
     print("\nThe order of operations is not yet configurable.\nIt is:")
     print("1) Select the rider data file")
-    print("3) ***Selection of worksheet not implemented")
-    print("4) Select a temperary folder of the produced images")
-    print("5) Select the columns which will be part of the qr code or barcode")
-    print("6) ***Filters to be implemented***")
-    print("7) ***Selection of qr code or barcode not implemented***")
-    print("8) Images are created")
-    print("9) Execute the create-document.py script")
+    print("2) Select worksheet if multiple are in the file")
+    print("3) Select the columns which will be part of the qr code or barcode")
+    print("4) Filter options are presented")
+    print("5) ***Selection of qr code or barcode not implemented***")
+    print("6) Create or Select an output Word document")
+    print("7) Images are created and placed in the Word document")
+    input('\nPress Enter to continue...')
+    print(divider)
     
     # ToDo: resolved error in PIL Image when from tkinter import * and Tk() is used
     # root = Tk()  # pointing root to Tk() to use it as Tk() in program.
@@ -516,7 +479,8 @@ if __name__ == '__main__':
     riders = riders.dropna(axis='columns',
                            how='all')
 
-    print("\nWhat information should be in the QR code, in order?")
+    print(divider)
+    print("\n\nWhat information should be in the QR code, in order?")
     rider_info = []
     iList_size = 9
     xStart = 0
@@ -536,6 +500,7 @@ if __name__ == '__main__':
                                 iList_size)
         
         info_selection = input(f"Choice (1:{min(len(dList), iList_size)}): ")
+        print('\n')
         if info_selection.lower() in universal_input_options:
             print('\n\nThe user choose to quit the program')
             sys.exit()
@@ -575,8 +540,9 @@ if __name__ == '__main__':
     riders = riders.dropna(subset=rider_info)
     # Drop all rows where the key column is the only coulmn with data
     riders = riders.dropna(thresh=2)
-    
-    print('\nWhat if any filters should be applied?')
+
+    print(divider)
+    print('\n\nWhat if any filters should be applied?')
     filter_dict = {}
     iList_size = 9
     continue_selection:bool = True
@@ -650,7 +616,7 @@ if __name__ == '__main__':
         xStart = 0
         while not valid_filter or continue_selection:
             valid_filter = False
-            print(f'Select a value to filter for {filter_append}:')
+            print(f'\nSelect a value to filter for {filter_append}:')
             
             try: 
                 filter_elements = list(map(lambda x:str(x),
@@ -714,7 +680,8 @@ if __name__ == '__main__':
 
     # ToDo: Check there is data remaining, if not return to filter selection
 
-    # Ask for first text row (suggest first name)
+    # Ask for text rows
+    print(divider)
     selected_lines = ['','']
     place_name = ['top', 'bottom']
     xtraList = [["     0. Show more columns [More]",
@@ -727,7 +694,7 @@ if __name__ == '__main__':
         continue_selection = True
         valid_column = False
         while continue_selection and not valid_column:
-            print(f"Select the {place_name[x]} line of text")
+            print(f"\nSelect the {place_name[x]} line of text")
             print("Column to use:")
             dList = display_options(riders.columns,
                                     xtraList[0],
@@ -754,6 +721,7 @@ if __name__ == '__main__':
             selected_lines[x] = ''
 
     # Select where final documents gets saved
+    print(divider)
     print("\nCreate a document name for the output codes.")
     code_doc = code_document_request(os.path.dirname(os.path.realpath(__file__)))
     print(f"Using {code_doc} as the output document")
@@ -772,7 +740,7 @@ if __name__ == '__main__':
                     sys.exit(0)
         except ValueError:
             print("\nEnter an integer value.")
-    print('\n')
+    print('\nCreating document...')
 
     try:
         document = Document()
@@ -850,3 +818,4 @@ if __name__ == '__main__':
         exception_file_open(code_doc)
 
     input('Process complete. Press enter to close the program or close the window as normal.')
+    sys.exit()
