@@ -351,8 +351,6 @@ def image_generation(info, text_top, text_bottom):
     layer_frame = frame_create(group)
     frame_w, frame_h = layer_frame.size
     
-    # Resize QR and logo per border definition
-    layer_qr = qr_create(group)
     # Option for adding a logo to the center of the qr code
     layer_logo = handle_logo(os.path.dirname(rider_file), layer_qr)
     # % Dimensions
@@ -372,8 +370,9 @@ def image_generation(info, text_top, text_bottom):
         (round((frame_w - logo_w) / 2),
          round((qr_h - logo_h) / 2) + qr_buffer),
         mask=None
-    # Add rider name text
     )
+
+    # Add rider name text
     start_size = 240
     font_size = start_size
     font = set_font(font_size)
@@ -720,6 +719,27 @@ if __name__ == '__main__':
         else:
             selected_lines[x] = ''
 
+    # Create debugging preview
+    # ToDo: return a preview when Python is running a debugger
+    if sys.gettrace() is not None:
+        delim = '\t'
+        riders_codes = riders[riders.columns.intersection(rider_info)].values.tolist()
+        rider_code = delim.join(str(var) for var in riders_codes[0])
+
+        try:
+            first_text = riders[selected_lines[0]][0].title()
+        except KeyError:
+            first_text = ''
+        try:
+            second_text = riders[selected_lines[1]][0].title()
+        except KeyError:
+            second_text = ''
+
+        rider_qr = image_generation(rider_code, first_text, second_text)
+        rider_qr.show()
+
+        input('Pause')
+
     # Select where final documents gets saved
     print(divider)
     print("\nCreate a document name for the output codes.")
@@ -745,9 +765,7 @@ if __name__ == '__main__':
     try:
         document = Document()
         document.add_paragraph()
-        document.add_section()
-        # document.save(output_document)
-        # document = Document(output_document)
+        # document.add_section()
     except PermissionError:
         exception_file_open(code_doc)
 
