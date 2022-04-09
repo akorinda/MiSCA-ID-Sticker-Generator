@@ -1,6 +1,6 @@
-"""Create scannable code images
+"""Create scannable code images and print on stickers
 
-Packages: sys, os, pandas, qrcode, PIL, datetime, tkinter
+Packages: sys, os, pandas, qrcode, PIL, datetime, tkinter, docx
 
 """
 
@@ -8,9 +8,9 @@ __authors__ = "Andrew Korinda"
 __copyright__ = "Copyright 2021, Midland Mountain Bike Crew"
 __credits__ = ["Andrew Korinda"]
 __license__ = "GPL-3.0-or-later"
-__version__ = "0.1"
+__version__ = "1.0.0"
 __maintainer__ = "https://github.com/akorinda/MiSCA-ID-Sticker-Generator"
-__status__ = "Prototype"
+__status__ = "Production"
 
 
 # Imports
