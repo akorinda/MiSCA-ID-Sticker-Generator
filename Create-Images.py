@@ -83,36 +83,6 @@ def set_font(default_font_size):
     return default_font
 
 
-def handle_logo(int_path, base_img):
-    # valid_selection:bool = False
-    # print('\nWith QR codes you can add a logo to the center.')
-    # print('A downside is the qr code will have less error handling.')
-    
-    # while not valid_selection:
-    #     confirm_desire = input('Will you like to add a logo? [Y,N]: ')
-        
-    #     if confirm_desire.lower() in ['y', 'yes']:
-    #         logo_file = filedialog.askopenfilename(
-    #             title='Open Center Logo',
-    #             filetypes=[("Image file", "*.jpg *.jpeg *.png")],
-    #             initialdir=int_path
-    #         )
-    #         valid_selection = True
-    #     elif confirm_desire.lower() in ['n', 'no']:
-    #         logo_file = ''
-    #         valid_selection = True
-
-    # try:
-    #     logo_img = Image.open(logo_file, mode='r')
-    #     logo_dim = round((0.07 * base_img.size[0] * base_img.size[1]) ** 0.5)
-    #     logo_img = logo_img.resize((logo_dim, logo_dim))
-    # except AttributeError:
-    logo_n = 1
-    logo_img = Image.new('RGB', (logo_n, logo_n))
-
-    return logo_img
-
-
 def display_options(prime_list, extend_list, x_pos, options_size):
     input_index = 1
     options_list = []
@@ -353,10 +323,7 @@ def image_generation(info, text_top, text_bottom):
     layer_frame = frame_create(group)
     frame_w, frame_h = layer_frame.size
     
-    # Option for adding a logo to the center of the qr code
-    layer_logo = handle_logo(os.path.dirname(rider_file), layer_qr)
     # % Dimensions
-    logo_w, logo_h = layer_logo.size
     qr_w, qr_h = layer_qr.size
     qr_buffer = round((frame_w - qr_w) / 2)
     
@@ -365,12 +332,6 @@ def image_generation(info, text_top, text_bottom):
     rider_image.paste(
         layer_qr,
         (qr_buffer, qr_buffer),
-        mask=None
-    )
-    rider_image.paste(
-        layer_logo,
-        (round((frame_w - logo_w) / 2),
-         round((qr_h - logo_h) / 2) + qr_buffer),
         mask=None
     )
 
