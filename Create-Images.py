@@ -83,36 +83,6 @@ def set_font(default_font_size):
     return default_font
 
 
-def handle_logo(int_path, base_img):
-    # valid_selection:bool = False
-    # print('\nWith QR codes you can add a logo to the center.')
-    # print('A downside is the qr code will have less error handling.')
-    
-    # while not valid_selection:
-    #     confirm_desire = input('Will you like to add a logo? [Y,N]: ')
-        
-    #     if confirm_desire.lower() in ['y', 'yes']:
-    #         logo_file = filedialog.askopenfilename(
-    #             title='Open Center Logo',
-    #             filetypes=[("Image file", "*.jpg *.jpeg *.png")],
-    #             initialdir=int_path
-    #         )
-    #         valid_selection = True
-    #     elif confirm_desire.lower() in ['n', 'no']:
-    #         logo_file = ''
-    #         valid_selection = True
-
-    # try:
-    #     logo_img = Image.open(logo_file, mode='r')
-    #     logo_dim = round((0.07 * base_img.size[0] * base_img.size[1]) ** 0.5)
-    #     logo_img = logo_img.resize((logo_dim, logo_dim))
-    # except AttributeError:
-    logo_n = 1
-    logo_img = Image.new('RGB', (logo_n, logo_n))
-
-    return logo_img
-
-
 def display_options(prime_list, extend_list, x_pos, options_size):
     input_index = 1
     options_list = []
@@ -130,11 +100,11 @@ def display_options(prime_list, extend_list, x_pos, options_size):
 
 def selection_evaluation(prime_inputs, extend_inputs, user_input,
                          output_list,
-                         list_step:int, list_max:int, x_pos:int,
-                         min_selections:int):
+                         list_step: int, list_max: int, x_pos: int,
+                         min_selections: int):
     global universal_input_options
-    valid_input:bool = True
-    continue_requests:bool = True
+    valid_input: bool = True
+    continue_requests: bool = True
     user_input = user_input.lower()
     
     if user_input in universal_input_options:
@@ -144,7 +114,7 @@ def selection_evaluation(prime_inputs, extend_inputs, user_input,
     elif user_input in extend_inputs:
         if user_input in ["more", '0']:
             x_pos += list_step
-            if x_pos >  list_max: x_pos = 0
+            if x_pos > list_max: x_pos = 0
             valid_input = False
         elif user_input in ['done', '99']:
             if len(output_list) >= min_selections:
@@ -159,11 +129,11 @@ def selection_evaluation(prime_inputs, extend_inputs, user_input,
         elif user_input in ['backspace', '~']:
             if len(output_list) > 0:
                 output_list.pop()
-    elif user_input in prime_inputs[0]: # Index given
+    elif user_input in prime_inputs[0]:  # Index given
         output_list = add_to_info_list(output_list, 
                                        prime_inputs[1], 
                                        x_pos + int(user_input) - 1)
-    elif user_input in prime_inputs[1]: # String given
+    elif user_input in prime_inputs[1]:  # String given
         user_input = list(prime_inputs[1]).index(user_input)
         output_list = add_to_info_list(output_list, 
                                        prime_inputs[1],
@@ -184,6 +154,7 @@ def selection_evaluation(prime_inputs, extend_inputs, user_input,
 
 
 my_queue = queue.Queue()
+
 
 def storeInQueue(f):
     def wrapper(*args):
@@ -290,6 +261,7 @@ def data_file(def_title):
             sheet_select = data_book.sheet_names
             continue_selection = False
 
+    selected_sheet = ''
     try:
         selected_sheet = sheet_select[0]
     except KeyError:
@@ -335,7 +307,7 @@ def code_document_request(int_path):
     return doc_name
 
 
-def add_to_info_list(current_list, available_list, add_index:int):
+def add_to_info_list(current_list, available_list, add_index: int):
     add_item = list(available_list)[add_index]
     current_list.append(add_item)
         
@@ -351,10 +323,7 @@ def image_generation(info, text_top, text_bottom):
     layer_frame = frame_create(group)
     frame_w, frame_h = layer_frame.size
     
-    # Option for adding a logo to the center of the qr code
-    layer_logo = handle_logo(os.path.dirname(rider_file), layer_qr)
     # % Dimensions
-    logo_w, logo_h = layer_logo.size
     qr_w, qr_h = layer_qr.size
     qr_buffer = round((frame_w - qr_w) / 2)
     
@@ -363,12 +332,6 @@ def image_generation(info, text_top, text_bottom):
     rider_image.paste(
         layer_qr,
         (qr_buffer, qr_buffer),
-        mask=None
-    )
-    rider_image.paste(
-        layer_logo,
-        (round((frame_w - logo_w) / 2),
-         round((qr_h - logo_h) / 2) + qr_buffer),
         mask=None
     )
 
@@ -483,7 +446,7 @@ if __name__ == '__main__':
     rider_info = []
     iList_size = 9
     xStart = 0
-    continue_selection:bool = True
+    continue_selection: bool = True
     delim = '\t'
     while continue_selection:
         print(f"\nCurrent information: {delim.join(rider_info)}")
@@ -514,15 +477,15 @@ if __name__ == '__main__':
         elif info_selection.lower() == 'clear list' or info_selection == '*':
             rider_info = []
             xStart = 0
-        elif info_selection.lower() == 'backspace' or info_selection =='~':
+        elif info_selection.lower() == 'backspace' or info_selection == '~':
             if len(rider_info) > 0:
                 rider_info.pop()
-        elif info_selection.lower() in map(lambda x:x.lower(), riders.columns):
+        elif info_selection.lower() in map(lambda x: x.lower(), riders.columns):
             info_selection = [var.lower() for var in riders.columns].index(info_selection)
             rider_info = add_to_info_list(rider_info, 
                                           riders.columns,
                                           info_selection)
-        elif info_selection in map(str, range(1,iList_size + 1)):
+        elif info_selection in map(str, range(1, iList_size + 1)):
             rider_info = add_to_info_list(rider_info, 
                                           dList, 
                                           int(info_selection) - 1)
@@ -537,15 +500,15 @@ if __name__ == '__main__':
     
     # Remove rows without data in key column
     riders = riders.dropna(subset=rider_info)
-    # Drop all rows where the key column is the only coulmn with data
+    # Drop all rows where the key column is the only column with data
     riders = riders.dropna(thresh=2)
 
     print(divider)
     print('\n\nWhat if any filters should be applied?')
     filter_dict = {}
     iList_size = 9
-    continue_selection:bool = True
-    valid_filter:bool = False
+    continue_selection: bool = True
+    valid_filter: bool = False
     delim = '\n  '
     delim_filters = ': '
     delim_select = ', '
@@ -590,10 +553,10 @@ if __name__ == '__main__':
             
             info_selection = input(f"Choice (1:{min(len(dList), iList_size)}): ")
             
-            info_ints = list(map(str, range(1,iList_size + 1)))
-            info_names = list(map(lambda x:x.lower(), riders.columns))
+            info_ints = list(map(str, range(1, iList_size + 1)))
+            info_names = list(map(lambda x: x.lower(), riders.columns))
             
-            filter_info[0], xStart, continue_selection, valid_filter = selection_evaluation([info_ints,info_names],
+            filter_info[0], xStart, continue_selection, valid_filter = selection_evaluation([info_ints, info_names],
                                                                                             xtraList[1],
                                                                                             info_selection,
                                                                                             filter_info[0],
@@ -618,7 +581,7 @@ if __name__ == '__main__':
             print(f'\nSelect a value to filter for {filter_append}:')
             
             try: 
-                filter_elements = list(map(lambda x:str(x),
+                filter_elements = list(map(lambda x: str(x),
                                            list(riders[filter_append].drop_duplicates())))
             except KeyError:
                 print(f'"{filter_info[0][-1]}" was not found in {riders.columns}')
@@ -631,10 +594,10 @@ if __name__ == '__main__':
             
             info_selection = input(f"Choice (1:{min(len(dList), iList_size)}): ")
             
-            info_ints = list(map(str, range(1,iList_size + 1)))
-            info_names = list(map(lambda x:x.lower(), filter_elements))
+            info_ints = list(map(str, range(1, iList_size + 1)))
+            info_names = list(map(lambda x: x.lower(), filter_elements))
                         
-            filter_info[1], xStart, continue_selection, valid_filter = selection_evaluation([info_ints,info_names],
+            filter_info[1], xStart, continue_selection, valid_filter = selection_evaluation([info_ints, info_names],
                                                                                             xtraList[1],
                                                                                             info_selection,
                                                                                             filter_info[1],
@@ -675,13 +638,13 @@ if __name__ == '__main__':
         riders = riders.reset_index(drop=True)
     except SyntaxError:
         print('No filter was recognized, continuing')
-        riders = riders # Apply no filter
+        riders = riders  # Apply no filter
 
     # ToDo: Check there is data remaining, if not return to filter selection
 
     # Ask for text rows
     print(divider)
-    selected_lines = ['','']
+    selected_lines = ['', '']
     place_name = ['top', 'bottom']
     xtraList = [["     0. Show more columns [More]",
                  "     99. No text [Done]"],
@@ -702,10 +665,10 @@ if __name__ == '__main__':
             
             info_selection = input(f"Choice (1:{min(len(dList), iList_size)}): ")
             
-            info_ints = list(map(str, range(1,iList_size + 1)))
-            info_names = list(map(lambda x:x.lower(), riders.columns))
+            info_ints = list(map(str, range(1, iList_size + 1)))
+            info_names = list(map(lambda x: x.lower(), riders.columns))
                 
-            text_select, xStart, continue_selection, valid_column = selection_evaluation([info_ints,info_names],
+            text_select, xStart, continue_selection, valid_column = selection_evaluation([info_ints, info_names],
                                                                                          xtraList[1],
                                                                                          info_selection,
                                                                                          list(selected_lines[x]),
@@ -797,7 +760,7 @@ if __name__ == '__main__':
         rider_dict.update({rider_text: [rider_code, first_text, second_text]})
 
     idx_rider = 0
-    for key_rider in sorted (rider_dict.keys()):
+    for key_rider in sorted(rider_dict.keys()):
         rider_file = os.path.join(code_path, key_rider + '.png')
         
         rider_qr = image_generation(rider_dict.get(key_rider)[0],
