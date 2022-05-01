@@ -99,19 +99,20 @@ Why?
 
 ### Built With
 
-* [Python 3.7.6](https://www.python.org/)
+* [Python 3.10.4](https://www.python.org/)
 
 
 
 <!-- GETTING STARTED -->
 ## Getting Started
 
-To get a local copy up and running follow these simple steps.
+Option 1) Download and run "Create Rider QR.exe" on Windows
+Option 2) Run a local copy of the script following these steps.
 
 ### Prerequisites
 
 This is an example of how to list things you need to use the software and how to install them.
-* Python 3 or newer (original development on 3.7)  [Download the Latest Python versions](https://www.python.org/downloads/)
+* Python 3 or newer (original development on 3.10)  [Download the Latest Python versions](https://www.python.org/downloads/)
 * [Python PIP Requirements](https://github.com/akorinda/MiSCA-ID-Sticker-Generator/blob/master/requirements.txt)
   
 
@@ -137,12 +138,11 @@ __Suggested use case:__ Place a sticker on each altheles' equipment and scan it 
 
 
 __Work Flow:__
-1. Download your MiSCA roster. Key columns are RegistrantId, Firstname, Lastname, and Rider
-2. Edit Create-Images.py for your file name and data needs (until issue fixed)
-3. Run Create-Images.py to create a folder of images
-4. Edit Create-Document.py for your image folder and document destination
-5. Run Create-Document.py to create the docx file
-6. Print the docx file on Avery Presta 94103 1"x1" sticker labels
+1. Download your rider roster. Important columns are a key (unique identifier), first name, and last name
+2. Convert the roster to an Excel format (*.xls or *.xlsx) if it isn't already
+3. Run "Create Rider QR.exe or "Create-Images.py"
+4. Follow the instructions presented in the text window
+5. Print the docx file on Avery Presta 94103 1"x1" sticker labels
 
 
 __Sticker Considerations:__<br>
@@ -154,7 +154,7 @@ At Midland Mountain Bike Crew (MMBC) we found helmets worked best. We tried bike
 
 
 __Are Duplicants Needed?__<br>
-There is flexibility in Create-Document.py to define how many copies of each sticker ared desired. We started the season with 3 stickers for each rider. In 2021, out of 64 riders, only one went through all three. We used an inkjet printer and the stickers were succeptible to smugging from rain; two stickers were replaced for water damage. After 12 weeks one sticker would not scan because it had become too faded from sun exposure.
+The program will ask you how many copies of each sticker you want. We started the season with 3 stickers for each rider. In 2021, out of 64 riders, only one went through all three. We used an inkjet printer and the stickers were succeptible to smugging from rain; two stickers were replaced for water damage. After 12 weeks one sticker would not scan because it had become too faded from sun exposure.
 
 
 __Barcode Scanner Requirements__<br>
@@ -168,11 +168,10 @@ QR codes require a 2D capable barcode scanner. MMBC used a basic [wired 1D 2D ba
 See the [open issues](https://github.com/akorinda/MiSCA-ID-Sticker-Generator/issues) for a list of proposed features (and known issues).
 
 Overview:
-* Remove hard coded file names and folders
 * Increase user input/output flexibility
-* Increase code flexibility
-* Link the two scripts so the user can go from selecting riders to printing codes in one execution
+* Increase code flexibility (QR, Code 128, etc)
 * Select specific athletes
+* Have a graphical rather than text interface
 
 
 
