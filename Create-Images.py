@@ -86,15 +86,15 @@ def set_font(default_font_size):
 def display_options(prime_list, extend_list, x_pos, options_size):
     input_index = 1
     options_list = []
-        
+
     for x in range(x_pos, min(x_pos + options_size, len(prime_list))):
         print(f"     {input_index}. {prime_list[x]}")
         input_index += 1
         options_list.append(prime_list[x])
-        
+
     for x in range(len(extend_list)):
         print(f"{extend_list[x]}")
-        
+
     return options_list
 
 
@@ -106,7 +106,7 @@ def selection_evaluation(prime_inputs, extend_inputs, user_input,
     valid_input: bool = True
     continue_requests: bool = True
     user_input = user_input.lower()
-    
+
     if user_input in universal_input_options:
         print('\n\nIn the future this will goto universal evaluation function but for now:')
         print('\n\nThe user choose to quit the program')
@@ -130,12 +130,12 @@ def selection_evaluation(prime_inputs, extend_inputs, user_input,
             if len(output_list) > 0:
                 output_list.pop()
     elif user_input in prime_inputs[0]:  # Index given
-        output_list = add_to_info_list(output_list, 
-                                       prime_inputs[1], 
+        output_list = add_to_info_list(output_list,
+                                       prime_inputs[1],
                                        x_pos + int(user_input) - 1)
     elif user_input in prime_inputs[1]:  # String given
         user_input = list(prime_inputs[1]).index(user_input)
-        output_list = add_to_info_list(output_list, 
+        output_list = add_to_info_list(output_list,
                                        prime_inputs[1],
                                        user_input)
     else:
@@ -149,7 +149,7 @@ def selection_evaluation(prime_inputs, extend_inputs, user_input,
             except IndexError:
                 print(f'  "{extend_inputs[x]}"')
         print('  Type "h" or "help" at input for more help information')
-                
+
     return output_list, x_pos, continue_requests, valid_input
 
 
@@ -187,26 +187,26 @@ def spinner(text):
 
 def data_file(def_title):
     global universal_input_options, my_queue
-    
+
     selected_file = filedialog.askopenfilename(
         title=def_title,
         filetypes=[("Excel file", "*.xlsx *.xls")]
     )
-    
+
     if len(selected_file) > 0:
         load_indicator = "Loading.."
-    
+
         t = threading.Thread(target=load_excel, args=(selected_file, ))
         t.start()
         while t.is_alive():
             load_indicator = spinner(load_indicator)
             time.sleep(0.1)
-    
+
         data_book = my_queue.get()
     else:
         print('No rider list was selected. Exiting')
         sys.exit(0)
-        
+
     if data_book == 'PermissionError':
         sys.exit(1)
     elif data_book == 'AssertionError':
@@ -310,14 +310,14 @@ def code_document_request(int_path):
 def add_to_info_list(current_list, available_list, add_index: int):
     add_item = list(available_list)[add_index]
     current_list.append(add_item)
-        
+
     return current_list
 
 
 def image_generation(info, text_top, text_bottom):
     group = 'white'
     text = text_top + '\n' + text_bottom
-    
+
     # Create layers
     layer_qr = qr_create(info)
     layer_frame = frame_create(group)
@@ -427,7 +427,7 @@ if __name__ == '__main__':
     print("7) Images are created and placed in the Word document")
     input('\nPress Enter to continue...')
     print(divider)
-    
+
     # ToDo: resolved error in PIL Image when from tkinter import * and Tk() is used
     # root = Tk()  # pointing root to Tk() to use it as Tk() in program.
     # root.withdraw()  # Hides small tkinter window.
@@ -455,12 +455,12 @@ if __name__ == '__main__':
                     "     99. Done with selections [Done]",
                     "     ~. Remove last selection [Backspace]",
                     "     *. [Clear list]"]
-        
+
         dList = display_options(riders.columns,
                                 xtraList,
                                 xStart,
                                 iList_size)
-        
+
         info_selection = input(f"Choice (1:{min(len(dList), iList_size)}): ")
         print('\n')
         if info_selection.lower() in universal_input_options:
@@ -482,12 +482,12 @@ if __name__ == '__main__':
                 rider_info.pop()
         elif info_selection.lower() in map(lambda x: x.lower(), riders.columns):
             info_selection = [var.lower() for var in riders.columns].index(info_selection)
-            rider_info = add_to_info_list(rider_info, 
+            rider_info = add_to_info_list(rider_info,
                                           riders.columns,
                                           info_selection)
         elif info_selection in map(str, range(1, iList_size + 1)):
-            rider_info = add_to_info_list(rider_info, 
-                                          dList, 
+            rider_info = add_to_info_list(rider_info,
+                                          dList,
                                           int(info_selection) - 1)
         else:
             print("\n!!!!! Selection was not recognized !!!!!")
@@ -497,7 +497,7 @@ if __name__ == '__main__':
             print("99 or Done")
             print("~ or Backspace")
             print("* or Clear list")
-    
+
     # Remove rows without data in key column
     riders = riders.dropna(subset=rider_info)
     # Drop all rows where the key column is the only column with data
@@ -539,23 +539,23 @@ if __name__ == '__main__':
                                                                delim_select.join(filter_info[1][x])]))
                     except IndexError:
                         filter_list = []
-                    
+
             if len(filter_list) > 0:
                 print(f"\nCurrent filters ↓↓↓\n  {delim.join(filter_list)}")
                 print("Next column to include:")
             else:
                 print('Column to filter:')
-             
+
             dList = display_options(riders.columns,
                                     xtraList[0],
                                     xStart,
                                     iList_size)
-            
+
             info_selection = input(f"Choice (1:{min(len(dList), iList_size)}): ")
-            
+
             info_ints = list(map(str, range(1, iList_size + 1)))
             info_names = list(map(lambda x: x.lower(), riders.columns))
-            
+
             filter_info[0], xStart, continue_selection, valid_filter = selection_evaluation([info_ints, info_names],
                                                                                             xtraList[1],
                                                                                             info_selection,
@@ -579,24 +579,24 @@ if __name__ == '__main__':
         while not valid_filter or continue_selection:
             valid_filter = False
             print(f'\nSelect a value to filter for {filter_append}:')
-            
-            try: 
+
+            try:
                 filter_elements = list(map(lambda x: str(x),
                                            list(riders[filter_append].drop_duplicates())))
             except KeyError:
                 print(f'"{filter_info[0][-1]}" was not found in {riders.columns}')
                 sys.exit()
-            
+
             dList = display_options(filter_elements,
                                     xtraList[0],
                                     xStart,
                                     iList_size)
-            
+
             info_selection = input(f"Choice (1:{min(len(dList), iList_size)}): ")
-            
+
             info_ints = list(map(str, range(1, iList_size + 1)))
             info_names = list(map(lambda x: x.lower(), filter_elements))
-                        
+
             filter_info[1], xStart, continue_selection, valid_filter = selection_evaluation([info_ints, info_names],
                                                                                             xtraList[1],
                                                                                             info_selection,
@@ -605,13 +605,13 @@ if __name__ == '__main__':
                                                                                             len(filter_elements),
                                                                                             xStart,
                                                                                             1)
-            
+
             if valid_filter and continue_selection:
                 selection_append = filter_elements[list(info_names).index(filter_info[1][-1])]
                 filter_dict[filter_append].append(selection_append)
                 # filter_info[1][-1] = filter_elements[list(info_names).index(filter_info[1][-1])]
         continue_selection, valid_filter = True, False
-                
+
     # Apply the filter
     # Brute force method
     try:
@@ -620,18 +620,18 @@ if __name__ == '__main__':
         delim_or = ' or '
         delim_and = ' and '
         delim_eval = ' == '
-        for x in range(len(filter_info[0])):
-            if x == 0:
+        for idx, filter_key in enumerate(filter_info[0]):
+            if idx == 0:
                 query = "'"
             else:
                 query = query + delim_and
-            for y in range(len(filter_info[1][x])):
-                if y == 0:
+            for idy, filter_value in enumerate(filter_info[1][idx]):
+                if idy == 0:
                     delim_or = '('
                 else:
                     delim_or = ' or '
-                query = query + delim_or + '`' + filter_info[0][x] + '`' + delim_eval + '"' + filter_info[1][x][y] + '"'
-                if y == len(filter_info[1][x]) - 1:
+                query = query + delim_or + '`' + filter_key + '`' + delim_eval + '"' + filter_value + '"'
+                if y == len(filter_value) - 1:
                     query = query + ')'
         query = query + "'"
         riders = riders.query(eval(query))
@@ -650,37 +650,37 @@ if __name__ == '__main__':
                  "     99. No text [Done]"],
                  ['0', 'more',
                   '99', 'done']]
-    for x in range(2):
+    for idx_place, current_place in enumerate(place_name):
         xStart = 0
         iList_size = 9
         continue_selection = True
         valid_column = False
         while continue_selection and not valid_column:
-            print(f"\nSelect the {place_name[x]} line of text")
+            print(f"\nSelect the {current_place} line of text")
             print("Column to use:")
             dList = display_options(riders.columns,
                                     xtraList[0],
                                     xStart,
                                     iList_size)
-            
+
             info_selection = input(f"Choice (1:{min(len(dList), iList_size)}): ")
-            
+
             info_ints = list(map(str, range(1, iList_size + 1)))
             info_names = list(map(lambda x: x.lower(), riders.columns))
-                
+
             text_select, xStart, continue_selection, valid_column = selection_evaluation([info_ints, info_names],
                                                                                          xtraList[1],
                                                                                          info_selection,
-                                                                                         list(selected_lines[x]),
+                                                                                         list(selected_lines[idx_place]),
                                                                                          iList_size,
                                                                                          riders.columns.size,
                                                                                          xStart,
                                                                                          0)
             time.sleep(0.01)
         if valid_column:
-            selected_lines[x] = riders.columns[list(info_names).index(text_select[0])]    
+            selected_lines[idx_place] = riders.columns[list(info_names).index(text_select[0])]
         else:
-            selected_lines[x] = ''
+            selected_lines[idx_place] = ''
 
     # Create debugging preview
     # ToDo: return a preview when Python is running a debugger
@@ -712,6 +712,7 @@ if __name__ == '__main__':
 
     # How many copies of each code should be put in the document?
     correct_format = False
+    code_qty = None
     while not correct_format:
         try:
             code_qty = input('\nHow many copies should be made for each participant?: ')
@@ -721,7 +722,7 @@ if __name__ == '__main__':
                 if code_qty <= 0:
                     print('\nNo codes printed based on requested quantity.')
                     sys.exit(0)
-        except ValueError:
+        except (ValueError, TypeError):
             print("\nEnter an integer value.")
     print('\nCreating document...')
 
@@ -730,6 +731,7 @@ if __name__ == '__main__':
         document.add_paragraph()
         # document.add_section()
     except PermissionError:
+        document = None
         exception_file_open(code_doc)
 
     document = qr_doc_format(document)
@@ -759,10 +761,9 @@ if __name__ == '__main__':
         rider_text = second_text + ' ' + first_text
         rider_dict.update({rider_text: [rider_code, first_text, second_text]})
 
-    idx_rider = 0
-    for key_rider in sorted(rider_dict.keys()):
+    for idx_rider, key_rider in enumerate(sorted(rider_dict.keys())):
         rider_file = os.path.join(code_path, key_rider + '.png')
-        
+
         rider_qr = image_generation(rider_dict.get(key_rider)[0],
                                     rider_dict.get(key_rider)[1],
                                     rider_dict.get(key_rider)[2])
@@ -775,7 +776,7 @@ if __name__ == '__main__':
             if idx_rider+1 % 6 == 0:
                 paragraph = document.add_paragraph()
                 paragraph = qr_line_format(paragraph)
-                paragraph.add_run('\t')
+                paragraph.add_run('\n\t')
             else:
                 paragraph.add_run('\t')
 
