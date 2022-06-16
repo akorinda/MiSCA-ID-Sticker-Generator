@@ -1,0 +1,16 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+pandas = ">=1.2.4"
+qrcode = ">=6.1"
+python-docx = ">=0.8.11"
+Pillow = ">=8.2.0"
+openpyxl = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.10"

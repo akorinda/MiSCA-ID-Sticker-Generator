@@ -1,6 +1,6 @@
-"""Create scannable code images
+"""Create scannable code images and print on stickers
 
-Packages: sys, os, pandas, qrcode, PIL, datetime, tkinter
+Packages: sys, os, pandas, qrcode, PIL, datetime, tkinter, docx
 
 """
 
@@ -8,14 +8,14 @@ __authors__ = "Andrew Korinda"
 __copyright__ = "Copyright 2021, Midland Mountain Bike Crew"
 __credits__ = ["Andrew Korinda"]
 __license__ = "GPL-3.0-or-later"
-__version__ = "0.1"
+__version__ = "1.0.0"
 __maintainer__ = "https://github.com/akorinda/MiSCA-ID-Sticker-Generator"
-__status__ = "Prototype"
+__status__ = "Production"
 
 
 # Imports
 import sys
-import os
+import subprocess, os, platform
 import time
 
 import pandas
@@ -23,6 +23,9 @@ import qrcode
 import threading, queue
 from PIL import Image, ImageDraw, ImageFont
 from tkinter import filedialog
+from docx import Document
+from docx.shared import Inches
+from docx.enum.text import WD_TAB_ALIGNMENT, WD_LINE_SPACING
 
 
 # Constants
@@ -80,60 +83,30 @@ def set_font(default_font_size):
     return default_font
 
 
-def handle_logo(int_path, base_img):
-    valid_selection:bool = False
-    print('\nWith QR codes you can add a logo to the center.')
-    print('A downside is the qr code will have less error handling.')
-    
-    while not valid_selection:
-        confirm_desire = input('Will you like to add a logo? [Y,N]: ')
-        
-        if confirm_desire.lower() in ['y', 'yes']:
-            logo_file = filedialog.askopenfilename(
-                title='Open Center Logo',
-                filetypes=[("Image file", "*.jpg *.jpeg *.png")],
-                initialdir=int_path
-            )
-            valid_selection = True
-        elif confirm_desire.lower() in ['n', 'no']:
-            logo_file = ''
-            valid_selection = True
-
-    try:
-        logo_img = Image.open(logo_file, mode='r')
-        logo_dim = round((0.07 * base_img.size[0] * base_img.size[1]) ** 0.5)
-        logo_img = logo_img.resize((logo_dim, logo_dim))
-    except AttributeError:
-        logo_n = 1
-        logo_img = Image.new('RGB', (logo_n, logo_n))
-
-    return logo_img
-
-
 def display_options(prime_list, extend_list, x_pos, options_size):
     input_index = 1
     options_list = []
-        
+
     for x in range(x_pos, min(x_pos + options_size, len(prime_list))):
         print(f"     {input_index}. {prime_list[x]}")
         input_index += 1
         options_list.append(prime_list[x])
-        
+
     for x in range(len(extend_list)):
         print(f"{extend_list[x]}")
-        
+
     return options_list
 
 
 def selection_evaluation(prime_inputs, extend_inputs, user_input,
                          output_list,
-                         list_step:int, list_max:int, x_pos:int,
-                         min_selections:int):
+                         list_step: int, list_max: int, x_pos: int,
+                         min_selections: int):
     global universal_input_options
-    valid_input:bool = True
-    continue_requests:bool = True
+    valid_input: bool = True
+    continue_requests: bool = True
     user_input = user_input.lower()
-    
+
     if user_input in universal_input_options:
         print('\n\nIn the future this will goto universal evaluation function but for now:')
         print('\n\nThe user choose to quit the program')
@@ -141,7 +114,7 @@ def selection_evaluation(prime_inputs, extend_inputs, user_input,
     elif user_input in extend_inputs:
         if user_input in ["more", '0']:
             x_pos += list_step
-            if x_pos >  list_max: x_pos = 0
+            if x_pos > list_max: x_pos = 0
             valid_input = False
         elif user_input in ['done', '99']:
             if len(output_list) >= min_selections:
@@ -156,13 +129,13 @@ def selection_evaluation(prime_inputs, extend_inputs, user_input,
         elif user_input in ['backspace', '~']:
             if len(output_list) > 0:
                 output_list.pop()
-    elif user_input in prime_inputs[0]: # Index given
-        output_list = add_to_info_list(output_list, 
-                                       prime_inputs[1], 
+    elif user_input in prime_inputs[0]:  # Index given
+        output_list = add_to_info_list(output_list,
+                                       prime_inputs[1],
                                        x_pos + int(user_input) - 1)
-    elif user_input in prime_inputs[1]: # String given
+    elif user_input in prime_inputs[1]:  # String given
         user_input = list(prime_inputs[1]).index(user_input)
-        output_list = add_to_info_list(output_list, 
+        output_list = add_to_info_list(output_list,
                                        prime_inputs[1],
                                        user_input)
     else:
@@ -176,11 +149,12 @@ def selection_evaluation(prime_inputs, extend_inputs, user_input,
             except IndexError:
                 print(f'  "{extend_inputs[x]}"')
         print('  Type "h" or "help" at input for more help information')
-                
+
     return output_list, x_pos, continue_requests, valid_input
 
 
 my_queue = queue.Queue()
+
 
 def storeInQueue(f):
     def wrapper(*args):
@@ -213,26 +187,26 @@ def spinner(text):
 
 def data_file(def_title):
     global universal_input_options, my_queue
-    
+
     selected_file = filedialog.askopenfilename(
         title=def_title,
         filetypes=[("Excel file", "*.xlsx *.xls")]
     )
-    
+
     if len(selected_file) > 0:
         load_indicator = "Loading.."
-    
+
         t = threading.Thread(target=load_excel, args=(selected_file, ))
         t.start()
         while t.is_alive():
             load_indicator = spinner(load_indicator)
             time.sleep(0.1)
-    
+
         data_book = my_queue.get()
     else:
         print('No rider list was selected. Exiting')
         sys.exit(0)
-        
+
     if data_book == 'PermissionError':
         sys.exit(1)
     elif data_book == 'AssertionError':
@@ -287,6 +261,7 @@ def data_file(def_title):
             sheet_select = data_book.sheet_names
             continue_selection = False
 
+    selected_sheet = ''
     try:
         selected_sheet = sheet_select[0]
     except KeyError:
@@ -298,24 +273,29 @@ def data_file(def_title):
     return selected_file, selected_sheet, data_rows
 
 
-def temp_img_path(int_path):
+def code_document_request(int_path):
     try:
-        img_path = filedialog.askdirectory(
-            title='QR Images Save Location',
-            initialdir=int_path
+        doc_name = filedialog.asksaveasfilename(
+            title='QR Document Save Location',
+            initialdir=int_path,
+            defaultextension='*.docx',
+            filetypes=[('Word file', '*.docx')],
+            confirmoverwrite=True
         )
 
-        if img_path == '':
+        if doc_name == '':
             print('No output path was selected. Exiting')
             sys.exit(0)
     except FileNotFoundError:
         print('The system cannot find the path specified. Exiting')
         sys.exit(0)
-    if not os.path.exists(img_path):
+
+    doc_path = os.path.dirname(doc_name)
+    if not os.path.exists(doc_path):
         try:
-            os.makedirs(img_path)
+            os.makedirs(doc_path)
         except PermissionError:
-            print(img_path + ' is not accessible.')
+            print(doc_path + ' is not accessible.')
             sys.exit(1)
         except AssertionError:
             print('No output path was selected. Exiting')
@@ -324,31 +304,26 @@ def temp_img_path(int_path):
             print('The system cannot find the path specified. Exiting')
             sys.exit(0)
 
-    return img_path
+    return doc_name
 
 
-def add_to_info_list(current_list, available_list, add_index:int):
+def add_to_info_list(current_list, available_list, add_index: int):
     add_item = list(available_list)[add_index]
     current_list.append(add_item)
-        
+
     return current_list
 
 
 def image_generation(info, text_top, text_bottom):
     group = 'white'
     text = text_top + '\n' + text_bottom
-    
+
     # Create layers
     layer_qr = qr_create(info)
     layer_frame = frame_create(group)
     frame_w, frame_h = layer_frame.size
     
-    # Resize QR and logo per border definition
-    layer_qr = qr_create(group)
-    # Option for adding a logo to the center of the qr code
-    layer_logo = handle_logo(os.path.dirname(rider_file), layer_qr)
     # % Dimensions
-    logo_w, logo_h = layer_logo.size
     qr_w, qr_h = layer_qr.size
     qr_buffer = round((frame_w - qr_w) / 2)
     
@@ -359,12 +334,7 @@ def image_generation(info, text_top, text_bottom):
         (qr_buffer, qr_buffer),
         mask=None
     )
-    rider_image.paste(
-        layer_logo,
-        (round((frame_w - logo_w) / 2),
-         round((qr_h - logo_h) / 2) + qr_buffer),
-        mask=None
-    )
+
     # Add rider name text
     start_size = 240
     font_size = start_size
@@ -403,8 +373,43 @@ def image_generation(info, text_top, text_bottom):
     return rider_image
 
 
+# Following the template for Avery Presta 94103, 1"x1" sticker labels
+def qr_line_format(paragraph_to_format):
+    paragraph_format = paragraph_to_format.paragraph_format
+    tab_stops = paragraph_format.tab_stops
+    for x in range(6):
+        tab_stops.add_tab_stop(Inches(0.5 + 1.23*x), WD_TAB_ALIGNMENT.CENTER)
+
+    paragraph_format.space_before = Inches(0)
+    paragraph_format.space_after = Inches(0.25)
+    paragraph_format.line_spacing_rule = WD_LINE_SPACING.SINGLE
+
+    return paragraph_to_format
+
+
+# Following the template for Avery Presta 94103, 1"x1" sticker labels
+def qr_doc_format(document_to_format):
+    section = document_to_format.sections[0]
+    section.left_margin = Inches(0.71)
+    section.right_margin = Inches(0.31)
+    section.top_margin = Inches(0.63)
+    section.bottom_margin = Inches(0.57)
+    section.gutter = Inches(0)
+
+    return document_to_format
+
+
+def exception_file_open(requested_document):
+    print(requested_document + ' is not accessible. Likely in use by another application.')
+    sys.exit(1)
+
+
 # Run the program
 if __name__ == '__main__':
+    divider = '--------------------------------------------------------------------------'
+    clear_command = "cls" if platform.system() == "Windows" else "clear"
+    os.system(clear_command)
+
     print("\n----------- Welcome to Making QR Code Rider Sheets -----------")
     print("- 'X' to return not implemented")
     print("- 'H' for help text not implemented")
@@ -414,14 +419,15 @@ if __name__ == '__main__':
                                'q', 'quit']
     print("\nThe order of operations is not yet configurable.\nIt is:")
     print("1) Select the rider data file")
-    print("3) ***Selection of worksheet not implemented")
-    print("4) Select a temperary folder of the produced images")
-    print("5) Select the columns which will be part of the qr code or barcode")
-    print("6) ***Filters to be implemented***")
-    print("7) ***Selection of qr code or barcode not implemented***")
-    print("8) Images are created")
-    print("9) Execute the create-document.py script")
-    
+    print("2) Select worksheet if multiple are in the file")
+    print("3) Select the columns which will be part of the qr code or barcode")
+    print("4) Filter options are presented")
+    print("5) ***Selection of qr code or barcode not implemented***")
+    print("6) Create or Select an output Word document")
+    print("7) Images are created and placed in the Word document")
+    input('\nPress Enter to continue...')
+    print(divider)
+
     # ToDo: resolved error in PIL Image when from tkinter import * and Tk() is used
     # root = Tk()  # pointing root to Tk() to use it as Tk() in program.
     # root.withdraw()  # Hides small tkinter window.
@@ -431,17 +437,16 @@ if __name__ == '__main__':
     print("\n\nProvide the file with the rider list. An Excel formant, *.xls or *.xlsx is expected")
     rider_file, rider_sheet, riders = data_file('Open Rider List')
     print(f'Using "{os.path.basename(rider_file)}",\n  Sheet "{rider_sheet}" for rider information')
-    
-    # Select where image files get saved
-    print("\nProvide a folder where QR images can be temporarily stored")
-    qrPath = temp_img_path(os.path.dirname(rider_file))
-    print(f"Using {qrPath} as the temporary image folder")
+    # Drop columns without any data
+    riders = riders.dropna(axis='columns',
+                           how='all')
 
-    print("\nWhat information should be in the QR code, in order?")
+    print(divider)
+    print("\n\nWhat information should be in the QR code, in order?")
     rider_info = []
     iList_size = 9
     xStart = 0
-    continue_selection:bool = True
+    continue_selection: bool = True
     delim = '\t'
     while continue_selection:
         print(f"\nCurrent information: {delim.join(rider_info)}")
@@ -450,13 +455,14 @@ if __name__ == '__main__':
                     "     99. Done with selections [Done]",
                     "     ~. Remove last selection [Backspace]",
                     "     *. [Clear list]"]
-        
+
         dList = display_options(riders.columns,
                                 xtraList,
                                 xStart,
                                 iList_size)
-        
+
         info_selection = input(f"Choice (1:{min(len(dList), iList_size)}): ")
+        print('\n')
         if info_selection.lower() in universal_input_options:
             print('\n\nThe user choose to quit the program')
             sys.exit()
@@ -471,17 +477,17 @@ if __name__ == '__main__':
         elif info_selection.lower() == 'clear list' or info_selection == '*':
             rider_info = []
             xStart = 0
-        elif info_selection.lower() == 'backspace' or info_selection =='~':
+        elif info_selection.lower() == 'backspace' or info_selection == '~':
             if len(rider_info) > 0:
                 rider_info.pop()
-        elif info_selection.lower() in map(lambda x:x.lower(), riders.columns):
+        elif info_selection.lower() in map(lambda x: x.lower(), riders.columns):
             info_selection = [var.lower() for var in riders.columns].index(info_selection)
-            rider_info = add_to_info_list(rider_info, 
+            rider_info = add_to_info_list(rider_info,
                                           riders.columns,
                                           info_selection)
-        elif info_selection in map(str, range(1,iList_size + 1)):
-            rider_info = add_to_info_list(rider_info, 
-                                          dList, 
+        elif info_selection in map(str, range(1, iList_size + 1)):
+            rider_info = add_to_info_list(rider_info,
+                                          dList,
                                           int(info_selection) - 1)
         else:
             print("\n!!!!! Selection was not recognized !!!!!")
@@ -491,13 +497,18 @@ if __name__ == '__main__':
             print("99 or Done")
             print("~ or Backspace")
             print("* or Clear list")
-    
-    
-    print('\nWhat if any filters should be applied?')
+
+    # Remove rows without data in key column
+    riders = riders.dropna(subset=rider_info)
+    # Drop all rows where the key column is the only column with data
+    riders = riders.dropna(thresh=2)
+
+    print(divider)
+    print('\n\nWhat if any filters should be applied?')
     filter_dict = {}
     iList_size = 9
-    continue_selection:bool = True
-    valid_filter:bool = False
+    continue_selection: bool = True
+    valid_filter: bool = False
     delim = '\n  '
     delim_filters = ': '
     delim_select = ', '
@@ -528,24 +539,24 @@ if __name__ == '__main__':
                                                                delim_select.join(filter_info[1][x])]))
                     except IndexError:
                         filter_list = []
-                    
+
             if len(filter_list) > 0:
                 print(f"\nCurrent filters ↓↓↓\n  {delim.join(filter_list)}")
                 print("Next column to include:")
             else:
                 print('Column to filter:')
-             
+
             dList = display_options(riders.columns,
                                     xtraList[0],
                                     xStart,
                                     iList_size)
-            
+
             info_selection = input(f"Choice (1:{min(len(dList), iList_size)}): ")
-            
-            info_ints = list(map(str, range(1,iList_size + 1)))
-            info_names = list(map(lambda x:x.lower(), riders.columns))
-            
-            filter_info[0], xStart, continue_selection, valid_filter = selection_evaluation([info_ints,info_names],
+
+            info_ints = list(map(str, range(1, iList_size + 1)))
+            info_names = list(map(lambda x: x.lower(), riders.columns))
+
+            filter_info[0], xStart, continue_selection, valid_filter = selection_evaluation([info_ints, info_names],
                                                                                             xtraList[1],
                                                                                             info_selection,
                                                                                             filter_info[0],
@@ -567,26 +578,26 @@ if __name__ == '__main__':
         xStart = 0
         while not valid_filter or continue_selection:
             valid_filter = False
-            print(f'Select a value to filter for {filter_append}:')
-            
-            try: 
-                filter_elements = list(map(lambda x:str(x),
+            print(f'\nSelect a value to filter for {filter_append}:')
+
+            try:
+                filter_elements = list(map(lambda x: str(x),
                                            list(riders[filter_append].drop_duplicates())))
             except KeyError:
                 print(f'"{filter_info[0][-1]}" was not found in {riders.columns}')
                 sys.exit()
-            
+
             dList = display_options(filter_elements,
                                     xtraList[0],
                                     xStart,
                                     iList_size)
-            
+
             info_selection = input(f"Choice (1:{min(len(dList), iList_size)}): ")
-            
-            info_ints = list(map(str, range(1,iList_size + 1)))
-            info_names = list(map(lambda x:x.lower(), filter_elements))
-                        
-            filter_info[1], xStart, continue_selection, valid_filter = selection_evaluation([info_ints,info_names],
+
+            info_ints = list(map(str, range(1, iList_size + 1)))
+            info_names = list(map(lambda x: x.lower(), filter_elements))
+
+            filter_info[1], xStart, continue_selection, valid_filter = selection_evaluation([info_ints, info_names],
                                                                                             xtraList[1],
                                                                                             info_selection,
                                                                                             filter_info[1],
@@ -594,111 +605,199 @@ if __name__ == '__main__':
                                                                                             len(filter_elements),
                                                                                             xStart,
                                                                                             1)
-            
+
             if valid_filter and continue_selection:
                 selection_append = filter_elements[list(info_names).index(filter_info[1][-1])]
                 filter_dict[filter_append].append(selection_append)
                 # filter_info[1][-1] = filter_elements[list(info_names).index(filter_info[1][-1])]
         continue_selection, valid_filter = True, False
-                
+
     # Apply the filter
     # Brute force method
-    filter_info = [list(filter_dict.keys()), list(filter_dict.values())]
-    query = ''
-    delim_or = ' or '
-    delim_and = ' and '
-    delim_eval = ' == '
-    for x in range(len(filter_info[0])):
-        if x == 0:
-            query = "'"
-        else:
-            query = query + delim_and
-        for y in range(len(filter_info[1][x])):
-            if y == 0:
-                delim_or = '('
+    try:
+        filter_info = [list(filter_dict.keys()), list(filter_dict.values())]
+        query = ''
+        delim_or = ' or '
+        delim_and = ' and '
+        delim_eval = ' == '
+        for idx, filter_key in enumerate(filter_info[0]):
+            if idx == 0:
+                query = "'"
             else:
-                delim_or = ' or '
-            query = query + delim_or + '`' + filter_info[0][x] + '`' + delim_eval + '"' + filter_info[1][x][y] + '"'
-            if y == len(filter_info[1][x]) - 1:
-                query = query + ')'
-    query = query + "'"
-    riders = riders.query(eval(query))
+                query = query + delim_and
+            for idy, filter_value in enumerate(filter_info[1][idx]):
+                if idy == 0:
+                    delim_or = '('
+                else:
+                    delim_or = ' or '
+                query = query + delim_or + '`' + filter_key + '`' + delim_eval + '"' + filter_value + '"'
+                if y == len(filter_value) - 1:
+                    query = query + ')'
+        query = query + "'"
+        riders = riders.query(eval(query))
+        riders = riders.reset_index(drop=True)
+    except SyntaxError:
+        print('No filter was recognized, continuing')
+        riders = riders  # Apply no filter
 
     # ToDo: Check there is data remaining, if not return to filter selection
 
-    # Ask for first text row (suggest first name)
-    selected_lines = ['','']
+    # Ask for text rows
+    print(divider)
+    selected_lines = ['', '']
     place_name = ['top', 'bottom']
     xtraList = [["     0. Show more columns [More]",
                  "     99. No text [Done]"],
                  ['0', 'more',
                   '99', 'done']]
-    for x in range(2):
+    for idx_place, current_place in enumerate(place_name):
         xStart = 0
         iList_size = 9
         continue_selection = True
         valid_column = False
         while continue_selection and not valid_column:
-            print(f"Select the {place_name[x]} line of text")
+            print(f"\nSelect the {current_place} line of text")
             print("Column to use:")
             dList = display_options(riders.columns,
                                     xtraList[0],
                                     xStart,
                                     iList_size)
-            
+
             info_selection = input(f"Choice (1:{min(len(dList), iList_size)}): ")
-            
-            info_ints = list(map(str, range(1,iList_size + 1)))
-            info_names = list(map(lambda x:x.lower(), riders.columns))
-                
-            text_select, xStart, continue_selection, valid_column = selection_evaluation([info_ints,info_names],
+
+            info_ints = list(map(str, range(1, iList_size + 1)))
+            info_names = list(map(lambda x: x.lower(), riders.columns))
+
+            text_select, xStart, continue_selection, valid_column = selection_evaluation([info_ints, info_names],
                                                                                          xtraList[1],
                                                                                          info_selection,
-                                                                                         list(selected_lines[x]),
+                                                                                         list(selected_lines[idx_place]),
                                                                                          iList_size,
                                                                                          riders.columns.size,
                                                                                          xStart,
                                                                                          0)
             time.sleep(0.01)
         if valid_column:
-            selected_lines[x] = riders.columns[list(info_names).index(text_select[0])]    
+            selected_lines[idx_place] = riders.columns[list(info_names).index(text_select[0])]
         else:
-            selected_lines[x] = ''
-    
-    # Ask for second text row (suggest last name)
-    #second_line = ''
-    
-    # Present a sample image for approval
-    delim = '\t'
-    # ToDO: Apply the users code
-    rider_code = str(int(riders['RegistrantId'][0]))
-                # delim.join([str(var) for var in rider_info])
-    try:
-        first_text = riders[selected_lines[0]][0].title() 
-    except KeyError:
-        first_text = ''
-    try:
-        second_text = riders[selected_lines[1]][0].title()
-    except KeyError:
-        second_text = ''
-        
-    rider_qr = image_generation(rider_code, first_text, second_text)
-    rider_qr.show()
-    
-    input('Pause')
-    
-    # ToDo: make range of riders selectable
-    for x in range(len(riders)):
-        rider_code = str(int(riders['RegistrantId'][x]))  # + '\t' + \
-                        # riders['Firstname'][x] + '\t' + riders['Lastname'][x]
-        rider_file = riders[selected_lines[1]][x].title() + ' ' + riders[selected_lines[0]][x].title()
-        first_text = riders[selected_lines[0]][x].title() 
-        second_text = riders[selected_lines[1]][x].title()
-        
+            selected_lines[idx_place] = ''
+
+    # Create debugging preview
+    # ToDo: return a preview when Python is running a debugger
+    if sys.gettrace() is not None:
+        delim = '\t'
+        riders_codes = riders[riders.columns.intersection(rider_info)].values.tolist()
+        rider_code = delim.join(str(var) for var in riders_codes[0])
+
+        try:
+            first_text = riders[selected_lines[0]][0].title()
+        except KeyError:
+            first_text = ''
+        try:
+            second_text = riders[selected_lines[1]][0].title()
+        except KeyError:
+            second_text = ''
+
         rider_qr = image_generation(rider_code, first_text, second_text)
-        
-        # ToDo: make the code type selectable
+        rider_qr.show()
 
-        rider_qr.save(qrPath + '/' + rider_file + '.png')
+        input('Pause')
 
-# rider_qr.show()
+    # Select where final documents gets saved
+    print(divider)
+    print("\nCreate a document name for the output codes.")
+    code_doc = code_document_request(os.path.dirname(os.path.realpath(__file__)))
+    print(f"Using {code_doc} as the output document")
+    code_path = os.path.dirname(code_doc)
+
+    # How many copies of each code should be put in the document?
+    correct_format = False
+    code_qty = None
+    while not correct_format:
+        try:
+            code_qty = input('\nHow many copies should be made for each participant?: ')
+            if len(code_qty) > 0:
+                code_qty = int(code_qty)
+                correct_format = True
+                if code_qty <= 0:
+                    print('\nNo codes printed based on requested quantity.')
+                    sys.exit(0)
+        except (ValueError, TypeError):
+            print("\nEnter an integer value.")
+    print('\nCreating document...')
+
+    try:
+        document = Document()
+        document.add_paragraph()
+        # document.add_section()
+    except PermissionError:
+        document = None
+        exception_file_open(code_doc)
+
+    document = qr_doc_format(document)
+    paragraph = document.paragraphs[0]
+    paragraph = qr_line_format(paragraph)
+
+    qr_count = 0
+    paragraph.add_run('\t')
+
+    # ToDo: make range of riders selectable
+    # ToDo: make the code type selectable
+    # ToDo: handle people with the same name
+
+    delim = '\t'
+    riders_codes = riders[riders.columns.intersection(rider_info)].values.tolist()
+    rider_dict = {}
+    for idx_rider in range(len(riders)):
+        rider_code = delim.join(str(var) for var in riders_codes[idx_rider])
+        try:
+            first_text = riders[selected_lines[0]][idx_rider].title()
+        except KeyError:
+            first_text = ''
+        try:
+            second_text = riders[selected_lines[1]][idx_rider].title()
+        except KeyError:
+            second_text = ''
+        rider_text = second_text + ' ' + first_text
+        rider_dict.update({rider_text: [rider_code, first_text, second_text]})
+
+    for idx_rider, key_rider in enumerate(sorted(rider_dict.keys())):
+        rider_file = os.path.join(code_path, key_rider + '.png')
+
+        rider_qr = image_generation(rider_dict.get(key_rider)[0],
+                                    rider_dict.get(key_rider)[1],
+                                    rider_dict.get(key_rider)[2])
+        rider_qr.save(rider_file)
+
+        # ToDo: show a progress meter
+        for copy_number in range(1, code_qty + 1):
+            run = paragraph.add_run()
+            run.add_picture(rider_file, height=Inches(1.0))
+            if idx_rider+1 % 6 == 0:
+                paragraph = document.add_paragraph()
+                paragraph = qr_line_format(paragraph)
+                paragraph.add_run('\n\t')
+            else:
+                paragraph.add_run('\t')
+
+        try:
+            os.remove(rider_file)
+        except OSError:
+            pass
+
+    try:
+        # Save what has been created as specified
+        document.save(code_doc)
+
+        # Open the created document
+        if platform.system() == 'Darwin':  # macOS
+            subprocess.call(('open', code_doc))
+        elif platform.system() == 'Windows':  # Windows
+            os.startfile(code_doc)
+        else:  # linux variants
+            subprocess.call(('xdg-open', code_doc))
+    except PermissionError:
+        exception_file_open(code_doc)
+
+    input('Process complete. Press enter to close the program or close the window as normal.')
+    sys.exit()
