@@ -375,8 +375,8 @@ def image_generation(info, text_top, text_bottom):
 def qr_line_format(paragraph_to_format):
     paragraph_format = paragraph_to_format.paragraph_format
     tab_stops = paragraph_format.tab_stops
-    for x in range(6):
-        tab_stops.add_tab_stop(Inches(0.5 + 1.23 * x), WD_TAB_ALIGNMENT.CENTER)
+    for horizontal in [0.5 + 1.23 * var for var in range(6)]:
+        tab_stops.add_tab_stop(Inches(horizontal), WD_TAB_ALIGNMENT.CENTER)
 
     paragraph_format.space_before = Inches(0)
     paragraph_format.space_after = Inches(0.25)
@@ -640,6 +640,7 @@ if __name__ == '__main__':
     except SyntaxError:
         print('No filter was recognized, continuing')
         riders = riders  # Apply no filter
+        query = ''
 
     if riders.empty:
         print(f'\nNo riders fit the query: {eval(query)}')
