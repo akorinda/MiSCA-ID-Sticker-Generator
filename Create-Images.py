@@ -12,7 +12,6 @@ __version__ = "1.0.0"
 __maintainer__ = "https://github.com/akorinda/MiSCA-ID-Sticker-Generator"
 __status__ = "Production"
 
-
 # Imports
 import sys
 import subprocess, os, platform
@@ -84,15 +83,13 @@ def set_font(default_font_size):
 
 
 def display_options(prime_list, extend_list, x_pos, options_size):
-    input_index = 1
     options_list = []
 
-    for x in range(x_pos, min(x_pos + options_size, len(prime_list))):
-        print(f"     {input_index}. {prime_list[x]}")
-        input_index += 1
-        options_list.append(prime_list[x])
+    for input_index, item in enumerate(prime_list[x_pos:min(x_pos + options_size, len(prime_list))]):
+        print(f"     {input_index + 1}. {item}")
+        options_list.append(item)
 
-    for item in enumerate(extend_list):
+    for item in extend_list:
         print(f"{item}")
 
     return options_list
@@ -143,11 +140,11 @@ def selection_evaluation(prime_inputs, extend_inputs, user_input,
         print("\n!!!!! Selection was not recognized !!!!!")
         print("Options available at this stage are:")
         print("  Number without period or neighboring text")
-        for x in range(0, len(extend_inputs), 2):
+        for list_index, text_input in enumerate(extend_inputs[::2]):
             try:
-                print(f'  "{extend_inputs[x]}" or "{extend_inputs[x+1]}"')
+                print(f'  "{text_input}" or "{extend_inputs[list_index + 1]}"')
             except IndexError:
-                print(f'  "{extend_inputs[x]}"')
+                print(f'  "{text_input}"')
         print('  Type "h" or "help" at input for more help information')
 
     return output_list, x_pos, continue_requests, valid_input
@@ -160,6 +157,7 @@ def storeInQueue(f):
     def wrapper(*args):
         global my_queue
         my_queue.put(f(*args))
+
     return wrapper
 
 
@@ -196,7 +194,7 @@ def data_file(def_title):
     if len(selected_file) > 0:
         load_indicator = "Loading.."
 
-        t = threading.Thread(target=load_excel, args=(selected_file, ))
+        t = threading.Thread(target=load_excel, args=(selected_file,))
         t.start()
         while t.is_alive():
             load_indicator = spinner(load_indicator)
@@ -322,11 +320,11 @@ def image_generation(info, text_top, text_bottom):
     layer_qr = qr_create(info)
     layer_frame = frame_create(group)
     frame_w, frame_h = layer_frame.size
-    
+
     # % Dimensions
     qr_w, qr_h = layer_qr.size
     qr_buffer = round((frame_w - qr_w) / 2)
-    
+
     # Stack layers
     rider_image = layer_frame
     rider_image.paste(
@@ -378,7 +376,7 @@ def qr_line_format(paragraph_to_format):
     paragraph_format = paragraph_to_format.paragraph_format
     tab_stops = paragraph_format.tab_stops
     for x in range(6):
-        tab_stops.add_tab_stop(Inches(0.5 + 1.23*x), WD_TAB_ALIGNMENT.CENTER)
+        tab_stops.add_tab_stop(Inches(0.5 + 1.23 * x), WD_TAB_ALIGNMENT.CENTER)
 
     paragraph_format.space_before = Inches(0)
     paragraph_format.space_after = Inches(0.25)
@@ -528,17 +526,17 @@ if __name__ == '__main__':
         # Select a column to filter
         while not valid_filter:
             filter_info = [list(filter_dict.keys()), list(filter_dict.values())]
-            for x in range(len(filter_info[0])):
+            for info_index, info_info in enumerate(filter_info[0]):
                 try:
-                    filter_list.append(delim_filters.join([filter_info[0][x],
-                                                           delim_select.join(filter_info[1][x])]))
+                    filter_list.append(delim_filters.join([info_info,
+                                                           delim_select.join(filter_info[1][info_index])]))
                 except IndexError:
                     filter_list = []
                 except NameError:
                     filter_list = []
                     try:
-                        filter_list.append(delim_filters.join([filter_info[0][x],
-                                                               delim_select.join(filter_info[1][x])]))
+                        filter_list.append(delim_filters.join([info_info,
+                                                               delim_select.join(filter_info[1][info_index])]))
                     except IndexError:
                         filter_list = []
 
@@ -575,6 +573,7 @@ if __name__ == '__main__':
         except KeyError:
             filter_dict[filter_append] = []
         # filter_info[0][-1] = riders.columns[list(info_names).index(filter_info[0][-1])]
+
         # Now that the column is valid, select a valid value within that column
         valid_filter = False
         xStart = 0
@@ -642,7 +641,10 @@ if __name__ == '__main__':
         print('No filter was recognized, continuing')
         riders = riders  # Apply no filter
 
-    # ToDo: Check there is data remaining, if not return to filter selection
+    if riders.empty:
+        print(f'\nNo riders fit the query: {eval(query)}')
+        sys.exit(0)
+        # ToDo: Return to filter selection
 
     # Ask for text rows
     print(divider)
@@ -650,8 +652,8 @@ if __name__ == '__main__':
     place_name = ['top', 'bottom']
     xtraList = [["     0. Show more columns [More]",
                  "     99. No text [Done]"],
-                 ['0', 'more',
-                  '99', 'done']]
+                ['0', 'more',
+                 '99', 'done']]
     text_select = None
     for idx_place, current_place in enumerate(place_name):
         xStart = 0
@@ -674,7 +676,8 @@ if __name__ == '__main__':
             text_select, xStart, continue_selection, valid_column = selection_evaluation([info_ints, info_names],
                                                                                          xtraList[1],
                                                                                          info_selection,
-                                                                                         list(selected_lines[idx_place]),
+                                                                                         list(
+                                                                                             selected_lines[idx_place]),
                                                                                          iList_size,
                                                                                          riders.columns.size,
                                                                                          xStart,
@@ -748,7 +751,7 @@ if __name__ == '__main__':
     delim = '\t'
     riders_codes = riders[riders.columns.intersection(rider_info)].values.tolist()
     rider_dict = {}
-    for idx_rider in range(len(riders)):
+    for idx_rider in enumerate(riders):
         rider_code = delim.join(str(var) for var in riders_codes[idx_rider])
         try:
             first_text = riders[selected_lines[0]][idx_rider].title()
