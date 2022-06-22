@@ -631,7 +631,7 @@ if __name__ == '__main__':
                 else:
                     delim_or = ' or '
                 query = query + delim_or + '`' + filter_key + '`' + delim_eval + '"' + filter_value + '"'
-                if y == len(filter_value) - 1:
+                if idy == len(filter_info[1][idx]) - 1:
                     query = query + ')'
         query = query + "'"
         riders = riders.query(eval(query))
