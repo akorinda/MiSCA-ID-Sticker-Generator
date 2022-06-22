@@ -92,8 +92,8 @@ def display_options(prime_list, extend_list, x_pos, options_size):
         input_index += 1
         options_list.append(prime_list[x])
 
-    for x in range(len(extend_list)):
-        print(f"{extend_list[x]}")
+    for item in enumerate(extend_list):
+        print(f"{item}")
 
     return options_list
 
@@ -520,6 +520,8 @@ if __name__ == '__main__':
                  '99', 'done',
                  '~', 'backspace',
                  '*', 'clear list']]
+    info_names = None
+    filter_info = None
     while continue_selection and not valid_filter:
         filter_list = []
         xStart = 0
@@ -650,6 +652,7 @@ if __name__ == '__main__':
                  "     99. No text [Done]"],
                  ['0', 'more',
                   '99', 'done']]
+    text_select = None
     for idx_place, current_place in enumerate(place_name):
         xStart = 0
         iList_size = 9
@@ -738,9 +741,6 @@ if __name__ == '__main__':
     paragraph = document.paragraphs[0]
     paragraph = qr_line_format(paragraph)
 
-    qr_count = 0
-    paragraph.add_run('\t')
-
     # ToDo: make range of riders selectable
     # ToDo: make the code type selectable
     # ToDo: handle people with the same name
@@ -771,14 +771,11 @@ if __name__ == '__main__':
 
         # ToDo: show a progress meter
         for copy_number in range(1, code_qty + 1):
-            run = paragraph.add_run()
+            run = paragraph.add_run('\t')
             run.add_picture(rider_file, height=Inches(1.0))
-            if idx_rider+1 % 6 == 0:
+            if ((idx_rider + 1) % 6) == 0:
                 paragraph = document.add_paragraph()
                 paragraph = qr_line_format(paragraph)
-                paragraph.add_run('\n\t')
-            else:
-                paragraph.add_run('\t')
 
         try:
             os.remove(rider_file)
