@@ -752,7 +752,7 @@ if __name__ == '__main__':
     delim = '\t'
     riders_codes = riders[riders.columns.intersection(rider_info)].values.tolist()
     rider_dict = {}
-    for idx_rider in enumerate(riders):
+    for idx_rider, dummy in enumerate(riders[riders.columns[0]]):
         rider_code = delim.join(str(var) for var in riders_codes[idx_rider])
         try:
             first_text = riders[selected_lines[0]][idx_rider].title()
